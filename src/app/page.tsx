@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MangaDexScraper } from "@/lib/scrapers/mangadex";
 import prisma from "@/lib/prisma";
 import HomeHeroBanner from "@/components/home/HomeHeroBanner";
+import { getSafeImageUrl } from "@/lib/imageUtils";
 import {
   BookOpen,
   Star,
@@ -98,10 +99,11 @@ export default async function HomePage() {
                 <div className="relative aspect-[2/3] overflow-hidden bg-slate-100 dark:bg-zinc-800">
                   {manga.coverImage ? (
                     <img
-                      src={manga.coverImage}
+                      src={getSafeImageUrl(manga.coverImage)}
                       alt={manga.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -163,10 +165,11 @@ export default async function HomePage() {
                 <div className="relative aspect-[2/3] overflow-hidden bg-slate-100 dark:bg-zinc-800">
                   {manga.coverImage ? (
                     <img
-                      src={manga.coverImage}
+                      src={getSafeImageUrl(manga.coverImage)}
                       alt={manga.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

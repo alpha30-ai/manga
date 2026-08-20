@@ -29,15 +29,19 @@ export async function GET(req: NextRequest) {
       return new NextResponse("Invalid URL", { status: 400 });
     }
 
-    const targetOrigin = new URL(targetUrl).origin;
+    const urlObj = new URL(targetUrl);
+    const isMangaDex = urlObj.hostname.includes("mangadex.org");
+    const referer = isMangaDex ? "https://mangadex.org/" : `${urlObj.origin}/`;
+
     const ua = BROWSER_USER_AGENTS[Math.floor(Math.random() * BROWSER_USER_AGENTS.length)];
 
     const res = await fetch(targetUrl, {
       headers: {
         "User-Agent": ua,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Referer": `${targetOrigin}/`,
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Referer": referer,
+        "Origin": isMangaDex ? "https://mangadex.org" : urlObj.origin,
         "Sec-Fetch-Dest": "image",
         "Sec-Fetch-Mode": "no-cors",
         "Sec-Fetch-Site": "cross-site",
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!res.ok) {
-      // Try with empty referer as fallback
+      // Fallback request without referer
       const fallbackRes = await fetch(targetUrl, {
         headers: {
           "User-Agent": ua,

@@ -10,6 +10,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ensureMangaInDb } from "@/lib/mangaSync";
+import { getSafeImageUrl } from "@/lib/imageUtils";
 
 export default async function MangaDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -200,9 +201,10 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
       <div className="relative h-72 sm:h-96 w-full overflow-hidden bg-zinc-950">
         {manga.coverImage && (
           <img
-            src={manga.coverImage}
+            src={getSafeImageUrl(manga.coverImage)}
             alt=""
             className="w-full h-full object-cover filter blur-2xl scale-125 opacity-40"
+            referrerPolicy="no-referrer"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-50 dark:from-zinc-950 via-zinc-950/60 to-black/40" />
@@ -225,9 +227,10 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
           <div className="w-52 sm:w-64 aspect-[2/3] shrink-0 mx-auto md:mx-0 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-800">
             {manga.coverImage ? (
               <img
-                src={manga.coverImage}
+                src={getSafeImageUrl(manga.coverImage)}
                 alt={manga.title}
                 className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

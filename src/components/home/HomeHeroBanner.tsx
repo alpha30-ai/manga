@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { localizeMangaContent } from "@/lib/arabicMangaMap";
+import { getSafeImageUrl } from "@/lib/imageUtils";
 
 interface MangaSpotlight {
   id: string;
@@ -84,7 +85,7 @@ export default function HomeHeroBanner({ mangaList }: { mangaList: MangaSpotligh
           {currentManga.coverImage && (
             <div
               className="absolute inset-0 bg-cover bg-center opacity-25 dark:opacity-35 scale-110 blur-2xl transition-all duration-1000"
-              style={{ backgroundImage: `url(${currentManga.coverImage})` }}
+              style={{ backgroundImage: `url(${getSafeImageUrl(currentManga.coverImage)})` }}
             />
           )}
 
@@ -103,9 +104,10 @@ export default function HomeHeroBanner({ mangaList }: { mangaList: MangaSpotligh
               >
                 {currentManga.coverImage ? (
                   <img
-                    src={currentManga.coverImage}
+                    src={getSafeImageUrl(currentManga.coverImage)}
                     alt={currentManga.title}
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-600">
@@ -240,9 +242,10 @@ export default function HomeHeroBanner({ mangaList }: { mangaList: MangaSpotligh
               >
                 {currentManga.coverImage ? (
                   <img
-                    src={currentManga.coverImage}
+                    src={getSafeImageUrl(currentManga.coverImage)}
                     alt={currentManga.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-600">

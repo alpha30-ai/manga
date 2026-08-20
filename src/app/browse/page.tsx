@@ -1,6 +1,7 @@
 import { MangaDexScraper, GENRE_TAG_MAP } from "@/lib/scrapers/mangadex";
 import Link from "next/link";
 import { BookOpen, Search, Filter, Sparkles, Star } from "lucide-react";
+import { getSafeImageUrl } from "@/lib/imageUtils";
 
 export default async function BrowsePage({
   searchParams,
@@ -140,10 +141,11 @@ export default async function BrowsePage({
             <div className="relative aspect-[2/3] overflow-hidden bg-slate-100 dark:bg-zinc-800">
               {m.coverImage ? (
                 <img
-                  src={m.coverImage}
+                  src={getSafeImageUrl(m.coverImage)}
                   alt={m.title}
                   loading="lazy"
                   className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
