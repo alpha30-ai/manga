@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  image         String?
+  role          Role      @default(USER)
+  emailVerified DateTime?
+  otp           String?
+  otpExpiry     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  comments      Comment[]
+  posts         CommunityPost[]
+  postLikes     PostLike[]
+  readingHistory ReadingHistory[]
+  favorites     Favorite[]
+  settings      UserSettings?
+  notifications Notification[]
+  requests      MangaRequest[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Manga {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  coverImage  String?
+  source      String?  
+  sourceId    String?  
+  status      String?
+  author      String?
+  genres      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapters    Chapter[]
+  readers     ReadingHistory[]
+  favorites   Favorite[]
+}
+
+model Chapter {
+  id          String   @id @default(cuid())
+  mangaId     String
+  manga       Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  title       String
+  chapterNum  Float
+  pages       String[] 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments    Comment[]
+  readers     ReadingHistory[]
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapterId   String?
+  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  postId      String?
+  post        CommunityPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CommunityPost {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  image       String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments    Comment[]
+  likes       PostLike[]
+}
+
+model PostLike {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([userId, postId])
+}
+
+model ReadingHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mangaId     String
+  manga       Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  chapterId   String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  pageNumber  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, mangaId])
+}
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mangaId     String
+  manga       Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, mangaId])
+}
+
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme             String   @default("system") // "light" | "dark" | "system"
+  readerMode        String   @default("vertical") // "vertical" | "horizontal-rtl" | "horizontal-ltr"
+  fitMode           String   @default("width") // "width" | "height" | "original"
+  preloadPages      Int      @default(3)
+  emailNotification Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+}
+
+model MangaSource {
+  id          String   @id @default(cuid())
+  name        String
+  baseUrl     String
+  language    String   @default("العربية")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  link        String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model MangaRequest {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title       String
+  type        String   @default("MANGA_REQUEST") // "MANGA_REQUEST" | "BROKEN_CHAPTER" | "SUGGESTION"
+  details     String?
+  status      String   @default("PENDING") // "PENDING" | "APPROVED" | "COMPLETED" | "REJECTED"
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSettings {
+  id                 String   @id @default("default")
+  siteName           String   @default("ألفا مانجا")
+  siteDescription    String   @default("أفضل منصة عربية احترافية لقراءة المانجا والمانهوا الكورية بأعلى جودة")
+  logoUrl            String?
+  faviconUrl         String?
+  webAppIconUrl      String?
+  headerSubtitle     String   @default("بوابة القراءة الاحترافية")
+  footerText         String   @default("المنصة العربية الأولى للمانجا والمانهوا")
+  developerCredit    String   @default("</> Developed by Mohamed Hashish")
+  announcement       String?
+  themeColor         String   @default("crimson")
+  isMaintenanceMode  Boolean  @default(false)
+  maintenanceMessage String   @default("الموقع تحت أعمال الصيانة والتطوير الدوري لتحديث الفصول وتحسين الأداء. سنعود للعمل بكامل طاقتنا قريباً.")
+  
+  // Visibility toggles for site name and subtitles
+  showSiteName       Boolean  @default(true)
+  showHeaderSubtitle Boolean  @default(true)
+  showFooterText     Boolean  @default(true)
+
+  updatedAt          DateTime @updatedAt
+}
