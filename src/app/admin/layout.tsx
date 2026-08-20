@@ -13,12 +13,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-slate-100/60 dark:bg-zinc-950 flex flex-col md:flex-row text-right overflow-hidden transition-colors" dir="rtl">
-      {/* Dynamic Collapsible Admin Sidebar */}
+      {/* Dynamic Collapsible Admin Sidebar & Mobile Header Drawer */}
       <AdminSidebar />
 
       {/* Main Content Area - Fully Fluid Responsive Layout */}
-      <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
-        <div className="w-full min-w-0 space-y-8">
+      <main className="flex-1 w-full min-w-0 p-3.5 sm:p-6 lg:p-8 overflow-y-auto h-[calc(100vh-3.5rem)] md:h-screen">
+        <div className="w-full min-w-0 space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-12">
           {children}
         </div>
       </main>
