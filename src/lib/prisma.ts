@@ -15,9 +15,9 @@ function getPool(): Pool {
 
     globalForPrisma.pool = new Pool({
       connectionString,
-      max: 3,
-      idleTimeoutMillis: 2000,
-      connectionTimeoutMillis: 5000,
+      max: 1, // 1 connection per serverless lambda to stay strictly within Supabase 15-client session mode
+      idleTimeoutMillis: 1000, // Terminate idle connections after 1s
+      connectionTimeoutMillis: 6000,
       allowExitOnIdle: true,
     });
 
@@ -34,10 +34,9 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
-const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// Unconditional global singleton across both Development & Serverless Production
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
 
 export default prisma;
