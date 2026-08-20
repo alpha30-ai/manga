@@ -13,6 +13,12 @@
   --background: #f8fafc;
   --foreground: #090d16;
   --grid-color: rgba(99, 102, 241, 0.04);
+  --primary-brand: #FF334B;
+  --primary-brand-hover: #E11D48;
+  --primary-brand-rgb: 255, 51, 75;
+  --primary-brand-glow: rgba(255, 51, 75, 0.25);
+  --primary-brand-from: #FF334B;
+  --primary-brand-to: #E11D48;
 }
 
 .dark {
@@ -38,7 +44,7 @@ body {
   background-size: 32px 32px;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar with dynamic theme brand color */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -47,11 +53,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #FF334B;
+  background: var(--primary-brand);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #e11d48;
+  background: var(--primary-brand-hover);
 }
 
 /* Hide scrollbar utility */
