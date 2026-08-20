@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "crawl": "npx tsx scripts/crawler.ts",
+    "keep-alive": "npx tsx scripts/keepAlive.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

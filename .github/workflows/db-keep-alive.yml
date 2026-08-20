@@ -1,0 +1,29 @@
+name: Database Keep-Alive (Prevent Supabase Sleep)
+
+on:
+  schedule:
+    # Run every 2 days at 06:00 UTC to prevent Supabase 7-day inactivity pause
+    - cron: "0 6 */2 * *"
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    name: Ping PostgreSQL Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run Database Keep-Alive Ping
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run keep-alive || true
