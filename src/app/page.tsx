@@ -19,15 +19,43 @@ export default async function HomePage() {
   let sources: any[] = [];
 
   try {
+    const popularPromise = scraper.getPopularManga(12).catch(() => []);
+    const latestPromise = scraper.getLatestUpdates(12).catch(() => []);
+    const sourcesPromise = prisma.mangaSource
+      .findMany({ where: { isActive: true }, take: 6 })
+      .catch(() => []);
+
     const [popular, latest, dbSources] = await Promise.all([
-      scraper.getPopularManga(12),
-      scraper.getLatestUpdates(12),
-      prisma.mangaSource.findMany({ where: { isActive: true }, take: 6 }),
+      popularPromise,
+      latestPromise,
+      sourcesPromise,
     ]);
 
-    popularManga = popular;
-    latestManga = latest;
-    sources = dbSources;
+    popularManga = Array.isArray(popular) ? popular : [];
+    latestManga = Array.isArray(latest) ? latest : [];
+    sources = Array.isArray(dbSources) ? dbSources : [];
+
+    // Resilient fallback to local database if external API is slow or empty
+    if (popularManga.length === 0) {
+      const localManga = await prisma.manga
+        .findMany({ take: 12, orderBy: { createdAt: "desc" } })
+        .catch(() => []);
+      if (localManga && localManga.length > 0) {
+        popularManga = localManga.map((m) => ({
+          id: m.id,
+          title: m.title,
+          description: m.description || "",
+          coverImage: m.coverImage || "",
+          author: m.author || "مانجاكا",
+          status: m.status || "مستمر",
+          genres: m.genres || [],
+        }));
+      }
+    }
+
+    if (latestManga.length === 0 && popularManga.length > 0) {
+      latestManga = [...popularManga].reverse();
+    }
   } catch (e) {
     console.error("Failed to fetch homepage manga:", e);
   }

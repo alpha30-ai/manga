@@ -5,20 +5,21 @@ import prisma from "@/lib/prisma";
 import { ensureMangaInDb } from "@/lib/mangaSync";
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const mangaId = searchParams.get("mangaId");
-
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json([]);
+    }
+
+    const { searchParams } = new URL(req.url);
+    const mangaId = searchParams.get("mangaId");
+
     if (mangaId) {
       const isFav = await prisma.favorite.findUnique({
         where: {
           userId_mangaId: {
-            userId: session.user.id,
+            userId,
             mangaId,
           },
         },
@@ -27,24 +28,25 @@ export async function GET(req: Request) {
     }
 
     const favorites = await prisma.favorite.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       include: { manga: true },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(favorites);
   } catch (error) {
     console.error("Favorites GET error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { mangaId, title, coverImage, author, status, genres } = await req.json();
 
     if (!mangaId) {
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
     const existing = await prisma.favorite.findUnique({
       where: {
         userId_mangaId: {
-          userId: session.user.id,
+          userId,
           mangaId,
         },
       },
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
     } else {
       const favorite = await prisma.favorite.create({
         data: {
-          userId: session.user.id,
+          userId,
           mangaId,
         },
       });

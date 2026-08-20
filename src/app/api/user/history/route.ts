@@ -5,14 +5,15 @@ import prisma from "@/lib/prisma";
 import { ensureMangaInDb, ensureChapterInDb } from "@/lib/mangaSync";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json([]);
+    }
+
     const history = await prisma.readingHistory.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { updatedAt: "desc" },
       include: {
         manga: true,
@@ -22,17 +23,18 @@ export async function GET() {
     return NextResponse.json(history);
   } catch (error) {
     console.error("History GET error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const {
       mangaId,
       chapterId,
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
     const history = await prisma.readingHistory.upsert({
       where: {
         userId_mangaId: {
-          userId: session.user.id,
+          userId,
           mangaId,
         },
       },
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       },
       create: {
-        userId: session.user.id,
+        userId,
         mangaId,
         chapterId,
         pageNumber,
@@ -93,17 +95,18 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { historyId, clearAll } = await req.json();
 
     if (clearAll) {
       await prisma.readingHistory.deleteMany({
-        where: { userId: session.user.id },
+        where: { userId },
       });
       return NextResponse.json({ success: true, message: "تم مسح سجل القراءة بالكامل" });
     }
