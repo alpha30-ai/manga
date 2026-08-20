@@ -10,11 +10,29 @@ export async function GET() {
       return NextResponse.json({ message: "غير مصرح لك بالوصول" }, { status: 403 });
     }
 
-    const [totalManga, totalChapters, totalSources, mangas] = await Promise.all([
-      prisma.manga.count(),
-      prisma.chapter.count(),
-      prisma.mangaSource.count(),
-      prisma.manga.findMany({
+    // Fast single aggregated count query to prevent connection pool exhaustion
+    let counts = { totalManga: 0, totalChapters: 0, totalSources: 0 };
+    try {
+      const countResult = await prisma.$queryRaw<Array<{
+        totalManga: number;
+        totalChapters: number;
+        totalSources: number;
+      }>>`
+        SELECT 
+          (SELECT COUNT(*)::int FROM "Manga") as "totalManga",
+          (SELECT COUNT(*)::int FROM "Chapter") as "totalChapters",
+          (SELECT COUNT(*)::int FROM "MangaSource") as "totalSources"
+      `;
+      if (countResult && countResult[0]) {
+        counts = countResult[0];
+      }
+    } catch (e) {
+      console.warn("Raw count query failed, using fallback:", e);
+    }
+
+    let mangas: any[] = [];
+    try {
+      mangas = await prisma.manga.findMany({
         take: 50,
         orderBy: { updatedAt: "desc" },
         include: {
@@ -22,13 +40,15 @@ export async function GET() {
             select: { chapters: true },
           },
         },
-      }),
-    ]);
+      });
+    } catch (e) {
+      console.warn("FindMany manga failed:", e);
+    }
 
     return NextResponse.json({
-      totalManga,
-      totalChapters,
-      totalSources,
+      totalManga: counts.totalManga,
+      totalChapters: counts.totalChapters,
+      totalSources: counts.totalSources,
       mangas: mangas.map((m) => ({
         id: m.id,
         title: m.title,
@@ -36,13 +56,19 @@ export async function GET() {
         author: m.author,
         status: m.status,
         genres: m.genres,
-        chaptersCount: m._count.chapters,
+        chaptersCount: m._count?.chapters || 0,
         source: m.source || "MangaDex",
         updatedAt: m.updatedAt,
       })),
     });
   } catch (error) {
     console.error("Crawler status API error:", error);
-    return NextResponse.json({ message: "فشل جلب بيانات الكرولر" }, { status: 500 });
+    return NextResponse.json({
+      totalManga: 0,
+      totalChapters: 0,
+      totalSources: 0,
+      mangas: [],
+      message: "فشل جلب بيانات الكرولر",
+    });
   }
 }

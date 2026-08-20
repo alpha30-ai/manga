@@ -6,39 +6,45 @@ import { authOptions } from "@/lib/auth";
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json([]);
     }
 
     let notifications = await prisma.notification.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
 
     // If user has 0 notifications, create a welcome notification
     if (notifications.length === 0) {
-      const welcome = await prisma.notification.create({
-        data: {
-          userId: session.user.id,
-          title: "مرحباً بك في ألفا مانجا! 🎉",
-          message: "استمتع بقراءة آلاف فصول المانجا والمانهوا بأعلى جودة مع حفظ تقدمك تلقائياً.",
-          link: "/browse",
-        },
-      });
-      notifications = [welcome];
+      try {
+        const welcome = await prisma.notification.create({
+          data: {
+            userId,
+            title: "مرحباً بك في ألفا مانجا! 🎉",
+            message: "استمتع بقراءة آلاف فصول المانجا والمانهوا بأعلى جودة مع حفظ تقدمك تلقائياً.",
+            link: "/browse",
+          },
+        });
+        notifications = [welcome];
+      } catch (e) {
+        console.warn("Failed to create welcome notification:", e);
+      }
     }
 
     return NextResponse.json(notifications);
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
 
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -46,7 +52,7 @@ export async function PATCH(req: Request) {
 
     if (markAllAsRead) {
       await prisma.notification.updateMany({
-        where: { userId: session.user.id, isRead: false },
+        where: { userId, isRead: false },
         data: { isRead: true },
       });
       return NextResponse.json({ success: true, message: "تم تحديد جميع الإشعارات كمقروءة" });
@@ -70,7 +76,8 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -78,7 +85,7 @@ export async function DELETE(req: Request) {
 
     if (clearAll) {
       await prisma.notification.deleteMany({
-        where: { userId: session.user.id },
+        where: { userId },
       });
       return NextResponse.json({ success: true, message: "تم مسح جميع الإشعارات" });
     }
