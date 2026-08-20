@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Layers, Users, User } from "lucide-react";
+import { Home, Compass, Layers, Users, User, Bookmark } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { currentPalette } = useTheme();
 
   // Do not show bottom nav inside admin panel or full screen reader
   if (pathname?.startsWith("/admin") || pathname?.includes("/chapter/")) {
@@ -21,26 +23,52 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-200/80 dark:border-zinc-800/80 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-lg shadow-black/5" dir="rtl">
-      <div className="flex items-center justify-around px-1 py-1.5">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-zinc-800/90 pb-[max(env(safe-area-inset-bottom),0.5rem)] shadow-2xl shadow-black/10 transition-colors"
+      dir="rtl"
+    >
+      <div className="flex items-center justify-around px-2 py-2">
         {links.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+          const isActive =
+            pathname === link.href ||
+            (link.href !== "/" && pathname?.startsWith(link.href));
 
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`relative flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all duration-200 ${
+              className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-300 ${
                 isActive
-                  ? "text-indigo-600 dark:text-indigo-400 font-bold scale-105"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  ? "font-black scale-105"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100"
               }`}
+              style={{
+                color: isActive ? currentPalette.hex : undefined,
+              }}
             >
+              {/* Top Laser Indicator on Active */}
               {isActive && (
-                <span className="absolute -top-1 w-6 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full" />
+                <>
+                  <span
+                    className="absolute -top-2 w-8 h-1 rounded-full shadow-md"
+                    style={{
+                      backgroundColor: currentPalette.hex,
+                      boxShadow: `0 0 10px ${currentPalette.glow || currentPalette.hex}`,
+                    }}
+                  />
+                  <span
+                    className="absolute inset-0 rounded-2xl opacity-15 pointer-events-none"
+                    style={{ backgroundColor: currentPalette.hex }}
+                  />
+                </>
               )}
-              <link.icon className={`w-5 h-5 transition-transform ${isActive ? "scale-110 stroke-[2.5]" : "stroke-[1.75]"}`} />
-              <span className="text-[11px] mt-0.5">{link.label}</span>
+
+              <link.icon
+                className={`w-5 h-5 transition-transform duration-200 ${
+                  isActive ? "scale-110 stroke-[2.5]" : "stroke-[1.75]"
+                }`}
+              />
+              <span className="text-[11px] mt-0.5 tracking-tight">{link.label}</span>
             </Link>
           );
         })}
