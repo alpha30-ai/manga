@@ -245,7 +245,7 @@ export default function AdminSettingsPage() {
       <div className="bg-gradient-to-l from-slate-900 via-indigo-950 to-zinc-900 border border-slate-700/60 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white rounded-full text-xs font-black border border-white/20">
-            <Sliders className="w-3.5 h-3.5 text-[#FF334B]" />
+            <Sliders className="w-3.5 h-3.5 text-indigo-400" />
             <span>لوحة التحكم في إعدادات المنصة</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white">
@@ -259,7 +259,7 @@ export default function AdminSettingsPage() {
         <button
           onClick={handleSubmit}
           disabled={saving}
-          className="px-6 py-3.5 bg-gradient-to-l from-[#FF334B] to-rose-600 hover:opacity-95 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-500/25 transition-all flex items-center justify-center gap-2 shrink-0"
+          className="px-6 py-3.5 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 shrink-0"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           <span>حفظ التعديلات</span>
@@ -270,7 +270,7 @@ export default function AdminSettingsPage() {
         {/* Section 1: Brand & Theme Palettes */}
         <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/90 dark:border-zinc-800/80 p-6 sm:p-8 space-y-6 shadow-sm">
           <h2 className="text-base font-bold text-slate-950 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-4">
-            <Palette className="w-5 h-5 text-[#FF334B]" />
+            <Palette className="w-5 h-5 text-indigo-500" />
             <span>لوحة ألوان وثيمات الموقع (Brand Theme Palette)</span>
           </h2>
 
@@ -675,7 +675,7 @@ export default function AdminSettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-l from-[#FF334B] to-rose-600 hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-xl shadow-rose-500/25 transition-all flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-xl shadow-rose-500/25 transition-all flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             <span>حفظ كافة التعديلات وتطبيقها فوراً</span>

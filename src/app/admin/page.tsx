@@ -130,7 +130,7 @@ export default async function AdminDashboardPage() {
       <div className="bg-gradient-to-l from-slate-900 via-indigo-950 to-zinc-900 border border-slate-700/60 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white rounded-full text-xs font-black border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>نظام ألفا مانجا إنتربرايز v5.5</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white">
@@ -145,14 +145,14 @@ export default async function AdminDashboardPage() {
         <div className="flex flex-wrap gap-2.5 relative z-10">
           <Link
             href="/admin/settings"
-            className="px-5 py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2"
+            className="px-5 py-3 bg-white hover:bg-slate-100 text-zinc-900 font-bold text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2"
           >
-            <Sliders className="w-4 h-4 text-[#FF334B]" />
+            <Sliders className="w-4 h-4 text-indigo-600" />
             <span>إعدادات الموقع والشعار</span>
           </Link>
           <Link
             href="/admin/requests"
-            className="px-5 py-3 bg-[#FF334B] hover:bg-rose-600 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2"
+            className="px-5 py-3 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2"
           >
             <Inbox className="w-4 h-4" />
             <span>طلبات القراء ({requestsCount})</span>
@@ -165,7 +165,7 @@ export default async function AdminDashboardPage() {
         {statCards.map((stat, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all space-y-4 relative overflow-hidden group"
+            className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-zinc-200/90 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all space-y-4 relative overflow-hidden group"
           >
             <div className="flex items-center justify-between">
               <div className={`p-3.5 rounded-2xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110`}>
@@ -189,13 +189,13 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* System Health & Status Bar */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-zinc-200/90 dark:border-zinc-800 shadow-sm">
         <h3 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-4 flex items-center gap-2">
           <Activity className="w-4 h-4 text-emerald-500" />
           <span>حالة البنية التحتية والخوادم المباشرة</span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200/60 dark:border-zinc-700 flex items-center justify-between">
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200/60 dark:border-zinc-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5 text-indigo-500" />
               <div>
@@ -206,7 +206,7 @@ export default async function AdminDashboardPage() {
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
           </div>
 
-          <div className="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200/60 dark:border-zinc-700 flex items-center justify-between">
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200/60 dark:border-zinc-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Server className="w-5 h-5 text-purple-500" />
               <div>
@@ -217,7 +217,7 @@ export default async function AdminDashboardPage() {
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           </div>
 
-          <div className="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200/60 dark:border-zinc-700 flex items-center justify-between">
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200/60 dark:border-zinc-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Cpu className="w-5 h-5 text-amber-500" />
               <div>
@@ -233,53 +233,56 @@ export default async function AdminDashboardPage() {
       {/* Live Lists: Users & Comments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Recent Users */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/90 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col">
-          <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/80 dark:bg-zinc-800/60">
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col">
+          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/80 dark:bg-zinc-800/60">
             <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-indigo-500" />
               <span>أحدث المسجلين في الموقع</span>
             </h3>
             <Link
               href="/admin/users"
-              className="text-xs font-bold text-[#FF334B] hover:underline"
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               إدارة الكل ({usersCount})
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-zinc-800 flex-1">
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800 flex-1">
             {recentUsers.map((u) => (
-              <div key={u.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
+              <div key={u.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF334B] to-rose-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
                     {u.name?.[0]?.toUpperCase() || "U"}
                   </div>
                   <div>
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                       {u.name || "بدون اسم"}
                     </h4>
-                    <p className="text-[11px] text-slate-400 font-mono" dir="ltr">
+                    <span className="text-xs text-slate-400 font-mono" dir="ltr">
                       {u.email}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                <div className="text-left">
-                  {u.role === "ADMIN" ? (
-                    <span className="px-2.5 py-1 text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-lg border border-amber-500/30">
-                      مدير النظام
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-1 text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-lg">
-                      عضو قارئ
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-black ${
+                      u.role === "ADMIN"
+                        ? "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                        : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
+                    }`}
+                  >
+                    {u.role === "ADMIN" ? "مشرف" : "قارئ"}
+                  </span>
+                  <span className="text-[10px] text-slate-400 hidden sm:inline">
+                    {new Date(u.createdAt).toLocaleDateString("ar-EG")}
+                  </span>
                 </div>
               </div>
             ))}
 
             {recentUsers.length === 0 && (
-              <div className="p-8 text-center text-slate-400 text-sm">
+              <div className="p-8 text-center text-slate-400 text-xs">
                 لا يوجد مستخدمون مسجلون بعد.
               </div>
             )}
@@ -287,40 +290,45 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Recent Comments */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/90 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col">
-          <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/80 dark:bg-zinc-800/60">
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col">
+          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/80 dark:bg-zinc-800/60">
             <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-indigo-500" />
-              <span>أحدث التعليقات والمشاركات</span>
+              <MessageSquare className="w-5 h-5 text-emerald-500" />
+              <span>أحدث التعليقات والنقاشات</span>
             </h3>
             <Link
               href="/admin/comments"
-              className="text-xs font-bold text-[#FF334B] hover:underline"
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
             >
-              مراقبة الكل ({commentsCount})
+              عرض الكل ({commentsCount})
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-zinc-800 flex-1">
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800 flex-1">
             {recentComments.map((c) => (
-              <div key={c.id} className="p-4 space-y-1.5 hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                    {c.user?.name || "مستخدم"}
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    {new Date(c.createdAt).toLocaleDateString("ar-EG")}
-                  </span>
+              <div key={c.id} className="p-4 flex items-start gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  {c.user?.name?.[0] || "U"}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
-                  {c.content}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {c.user?.name || "مستخدم مجهول"}
+                    </h4>
+                    <span className="text-[10px] text-slate-400">
+                      {new Date(c.createdAt).toLocaleDateString("ar-EG")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 leading-relaxed bg-zinc-50 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-700/50">
+                    {c.content}
+                  </p>
+                </div>
               </div>
             ))}
 
             {recentComments.length === 0 && (
-              <div className="p-8 text-center text-slate-400 text-sm">
-                لا توجد تعليقات جديدة.
+              <div className="p-8 text-center text-slate-400 text-xs">
+                لا توجد تعليقات حتى الآن.
               </div>
             )}
           </div>
