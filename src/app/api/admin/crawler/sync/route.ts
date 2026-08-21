@@ -152,6 +152,27 @@ export async function POST(req: Request) {
       });
     }
 
+    // 7.1 Batch Delete Multiple Manga
+    if (action === "delete-multiple-manga") {
+      const { mangaIds } = body;
+      if (!Array.isArray(mangaIds) || mangaIds.length === 0) {
+        return NextResponse.json({ message: "يرجى تحديد عمل واحد على الأقل للحذف" }, { status: 400 });
+      }
+
+      const deleted = await prisma.manga.deleteMany({
+        where: {
+          id: { in: mangaIds },
+        },
+      });
+      memoryCache.clear();
+
+      return NextResponse.json({
+        success: true,
+        message: `تم بنجاح حذف ${deleted.count} أعمال وكافة فصولها من قاعدة البيانات.`,
+        count: deleted.count,
+      });
+    }
+
     // 8. Edit Manga Details
     if (action === "edit-manga") {
       if (!mangaId || !data) {

@@ -22,6 +22,9 @@ import {
   Save,
   Check,
   Eye,
+  CheckSquare,
+  Square,
+  AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -84,6 +87,11 @@ export default function AdminCrawlerPage() {
 
   // Filter stored manga
   const [filterQuery, setFilterQuery] = useState("");
+
+  // Batch / Multi-selection state
+  const [selectedMangaIds, setSelectedMangaIds] = useState<string[]>([]);
+  const [customSelectCount, setCustomSelectCount] = useState("5");
+  const [deletingBulk, setDeletingBulk] = useState(false);
 
   // Edit Manga Modal State
   const [editingManga, setEditingManga] = useState<StoredManga | null>(null);
@@ -312,7 +320,7 @@ export default function AdminCrawlerPage() {
     }
   };
 
-  // Delete Manga
+  // Delete Single Manga
   const handleDeleteManga = async (mangaId: string, title: string) => {
     if (
       !confirm(
@@ -332,12 +340,95 @@ export default function AdminCrawlerPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(data.message || "تم حذف العمل بنجاح", { id: `del-${mangaId}` });
+        setSelectedMangaIds((prev) => prev.filter((id) => id !== mangaId));
         fetchStatus();
       } else {
         toast.error(data.message || "فشل الحذف", { id: `del-${mangaId}` });
       }
     } catch (e) {
       toast.error("حدث خطأ أثناء الحذف", { id: `del-${mangaId}` });
+    }
+  };
+
+  // Filtered stored manga
+  const filteredMangas = stats.mangas.filter(
+    (m) =>
+      m.title?.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      m.author?.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      m.source?.toLowerCase().includes(filterQuery.toLowerCase())
+  );
+
+  // Selection handlers
+  const handleToggleSelectOne = (id: string) => {
+    setSelectedMangaIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectTopN = (count: number) => {
+    const countToTake = Math.max(1, count);
+    const ids = filteredMangas.slice(0, countToTake).map((m) => m.id);
+    setSelectedMangaIds(ids);
+    toast.success(`تم تحديد ${ids.length} أعمال ✓`);
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedMangaIds.length === filteredMangas.length && filteredMangas.length > 0) {
+      setSelectedMangaIds([]);
+    } else {
+      setSelectedMangaIds(filteredMangas.map((m) => m.id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedMangaIds([]);
+  };
+
+  // Batch Delete Selected Manga
+  const handleBulkDeleteSelected = async () => {
+    if (selectedMangaIds.length === 0) {
+      toast.error("يرجى تحديد أعمال لحذفها");
+      return;
+    }
+
+    if (
+      !confirm(
+        `⚠️ تحذير: هل أنت متأكد من رغبتك في حذف ${selectedMangaIds.length} أعمال محددة وجميع فصولها وصفحاتها نهائياً من قاعدة البيانات؟`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingBulk(true);
+      toast.loading(`جاري حذف ${selectedMangaIds.length} أعمال من قاعدة البيانات...`, {
+        id: "bulk-del-toast",
+      });
+
+      const res = await fetch("/api/admin/crawler/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete-multiple-manga",
+          mangaIds: selectedMangaIds,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || `تم حذف ${selectedMangaIds.length} أعمال بنجاح!`, {
+          id: "bulk-del-toast",
+          duration: 5000,
+        });
+        setSelectedMangaIds([]);
+        fetchStatus();
+      } else {
+        toast.error(data.message || "فشل حذف الأعمال المحددة", { id: "bulk-del-toast" });
+      }
+    } catch (e) {
+      toast.error("حدث خطأ أثناء الحذف", { id: "bulk-del-toast" });
+    } finally {
+      setDeletingBulk(false);
     }
   };
 
@@ -495,16 +586,11 @@ export default function AdminCrawlerPage() {
     }
   };
 
-  // Filtered stored manga
-  const filteredMangas = stats.mangas.filter(
-    (m) =>
-      m.title?.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      m.author?.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      m.source?.toLowerCase().includes(filterQuery.toLowerCase())
-  );
+  const isAllSelected =
+    filteredMangas.length > 0 && selectedMangaIds.length === filteredMangas.length;
 
   return (
-    <div className="space-y-8 w-full min-w-0 pb-20" dir="rtl">
+    <div className="space-y-8 w-full min-w-0 pb-28" dir="rtl">
       {/* Header Banner */}
       <div className="bg-gradient-to-l from-slate-900 via-indigo-950 to-zinc-900 border border-slate-700/60 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
@@ -730,7 +816,7 @@ export default function AdminCrawlerPage() {
         )}
       </div>
 
-      {/* Database Manga Management Table */}
+      {/* Database Manga Management Table with Batch Selection & Deletion */}
       <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/90 dark:border-zinc-800 overflow-hidden shadow-sm space-y-4 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 pb-4">
           <div>
@@ -739,7 +825,7 @@ export default function AdminCrawlerPage() {
               <span>الأعمال المخزنة في قاعدة البيانات ({filteredMangas.length})</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-              تحكم كامل في تعديل البيانات، إدارة الفصول الفردية، والحذف الدائم لأي عمل
+              حدد عدداً معيناً من الأعمال لحذفها بشكل مباشر، أو عدل تفاصيل وفصول أي عمل
             </p>
           </div>
 
@@ -767,10 +853,108 @@ export default function AdminCrawlerPage() {
           </div>
         </div>
 
+        {/* Quick Batch Selection Toolbar */}
+        <div className="p-4 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-zinc-300">
+              تحديد سريع:
+            </span>
+
+            <button
+              onClick={() => handleSelectTopN(5)}
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+            >
+              أول 5 أعمال
+            </button>
+
+            <button
+              onClick={() => handleSelectTopN(10)}
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+            >
+              أول 10 أعمال
+            </button>
+
+            <button
+              onClick={() => handleSelectTopN(25)}
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+            >
+              أول 25 عمل
+            </button>
+
+            <button
+              onClick={handleToggleSelectAll}
+              className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400"
+            >
+              {isAllSelected ? "إلغاء تحديد الكل" : "تحديد كافة الأعمال"}
+            </button>
+
+            {/* Custom Count Input */}
+            <div className="flex items-center gap-1.5 mr-2">
+              <span className="text-xs text-slate-500 font-bold">تحديد عدد:</span>
+              <input
+                type="number"
+                min="1"
+                max={filteredMangas.length}
+                value={customSelectCount}
+                onChange={(e) => setCustomSelectCount(e.target.value)}
+                className="w-16 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-center outline-none focus:ring-1 focus:ring-[#FF334B]"
+              />
+              <button
+                onClick={() => handleSelectTopN(parseInt(customSelectCount) || 1)}
+                className="px-3 py-1 bg-slate-200 dark:bg-zinc-700 hover:bg-slate-300 text-slate-900 dark:text-white rounded-lg text-xs font-bold"
+              >
+                تطبيق
+              </button>
+            </div>
+          </div>
+
+          {/* Selected Count & Direct Delete Button */}
+          {selectedMangaIds.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-xl border border-rose-200 dark:border-rose-900">
+                تم تحديد: {selectedMangaIds.length} من {filteredMangas.length}
+              </span>
+
+              <button
+                onClick={handleBulkDeleteSelected}
+                disabled={deletingBulk}
+                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-md shadow-red-500/20 transition-all flex items-center gap-1.5"
+              >
+                {deletingBulk ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>حذف الأعمال المحددة ({selectedMangaIds.length})</span>
+              </button>
+
+              <button
+                onClick={handleClearSelection}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                إلغاء التحديد
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs sm:text-sm">
             <thead className="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400 font-bold">
               <tr>
+                <th className="p-4 sm:p-5 w-12 text-center">
+                  <button
+                    onClick={handleToggleSelectAll}
+                    className="p-1 hover:text-indigo-600 transition-colors"
+                    title={isAllSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="w-4 h-4 text-[#FF334B]" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
                 <th className="p-4 sm:p-5">العمل</th>
                 <th className="p-4 sm:p-5">المؤلف</th>
                 <th className="p-4 sm:p-5">الفصول</th>
@@ -782,7 +966,7 @@ export default function AdminCrawlerPage() {
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {loading && stats.mangas.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-slate-400">
+                  <td colSpan={7} className="p-12 text-center text-slate-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#FF334B]" />
                     <span>جاري تحميل قائمة الأعمال...</span>
                   </td>
@@ -791,138 +975,194 @@ export default function AdminCrawlerPage() {
 
               {!loading && filteredMangas.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-slate-400">
+                  <td colSpan={7} className="p-12 text-center text-slate-400">
                     لم يتم العثور على أي أعمال مطابقة. استخدم شريط البحث أعلاه لسحب أعمال جديدة.
                   </td>
                 </tr>
               )}
 
-              {filteredMangas.map((m) => (
-                <tr
-                  key={m.id}
-                  className="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors"
-                >
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-zinc-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 shadow-sm">
-                        {m.coverImage ? (
-                          <img
-                            src={getSafeImageUrl(m.coverImage)}
-                            alt={m.title}
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
+              {filteredMangas.map((m) => {
+                const isSelected = selectedMangaIds.includes(m.id);
+
+                return (
+                  <tr
+                    key={m.id}
+                    className={`transition-colors ${
+                      isSelected
+                        ? "bg-rose-50/50 dark:bg-rose-950/20"
+                        : "hover:bg-slate-50 dark:hover:bg-zinc-800/40"
+                    }`}
+                  >
+                    {/* Checkbox cell */}
+                    <td className="p-4 sm:p-5 text-center">
+                      <button
+                        onClick={() => handleToggleSelectOne(m.id)}
+                        className="p-1 text-slate-400 hover:text-[#FF334B]"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-[#FF334B]" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen className="w-4 h-4 text-slate-400" />
-                          </div>
+                          <Square className="w-4 h-4" />
                         )}
-                      </div>
-                      <div className="min-w-0 max-w-xs">
-                        <span className="block truncate font-black text-xs sm:text-sm">
-                          {m.title}
-                        </span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {m.genres?.slice(0, 2).map((g) => (
-                            <span
-                              key={g}
-                              className="px-1.5 py-0.5 bg-rose-50 dark:bg-rose-950/60 text-[#FF334B] rounded text-[10px] font-bold"
-                            >
-                              {g}
-                            </span>
-                          ))}
+                      </button>
+                    </td>
+
+                    <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-zinc-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 shadow-sm">
+                          {m.coverImage ? (
+                            <img
+                              src={getSafeImageUrl(m.coverImage)}
+                              alt={m.title}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen className="w-4 h-4 text-slate-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 max-w-xs">
+                          <span className="block truncate font-black text-xs sm:text-sm">
+                            {m.title}
+                          </span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {m.genres?.slice(0, 2).map((g) => (
+                              <span
+                                key={g}
+                                className="px-1.5 py-0.5 bg-rose-50 dark:bg-rose-950/60 text-[#FF334B] rounded text-[10px] font-bold"
+                              >
+                                {g}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="p-4 sm:p-5 text-slate-600 dark:text-zinc-400">
-                    {m.author || "غير معروف"}
-                  </td>
+                    <td className="p-4 sm:p-5 text-slate-600 dark:text-zinc-400">
+                      {m.author || "غير معروف"}
+                    </td>
 
-                  <td className="p-4 sm:p-5">
-                    <button
-                      onClick={() => handleOpenChapters(m)}
-                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-black rounded-full text-xs transition-colors flex items-center gap-1"
-                      title="عرض وإدارة الفصول"
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>{m.chaptersCount} فصل</span>
-                    </button>
-                  </td>
-
-                  <td className="p-4 sm:p-5 text-slate-500 font-mono text-xs">
-                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-bold">
-                      {m.source}
-                    </span>
-                  </td>
-
-                  <td className="p-4 sm:p-5">
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      {m.status || "مستمر"}
-                    </span>
-                  </td>
-
-                  <td className="p-4 sm:p-5 text-left">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {/* Manage Chapters */}
+                    <td className="p-4 sm:p-5">
                       <button
                         onClick={() => handleOpenChapters(m)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition-colors"
-                        title="إدارة الفصول"
+                        className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-black rounded-full text-xs transition-colors flex items-center gap-1"
+                        title="عرض وإدارة الفصول"
                       >
-                        <Layers className="w-4 h-4" />
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>{m.chaptersCount} فصل</span>
                       </button>
+                    </td>
 
-                      {/* Edit Manga Details */}
-                      <button
-                        onClick={() => handleOpenEdit(m)}
-                        className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors"
-                        title="تعديل بيانات العمل"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
+                    <td className="p-4 sm:p-5 text-slate-500 font-mono text-xs">
+                      <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-bold">
+                        {m.source}
+                      </span>
+                    </td>
 
-                      {/* Re-sync */}
-                      <button
-                        onClick={() => handleReSyncSingle(m.id)}
-                        disabled={reSyncingId === m.id}
-                        className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
-                        title="مزامنة الفصول الجديدة"
-                      >
-                        {reSyncingId === m.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="w-4 h-4" />
-                        )}
-                      </button>
+                    <td className="p-4 sm:p-5">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        {m.status || "مستمر"}
+                      </span>
+                    </td>
 
-                      {/* Delete Manga */}
-                      <button
-                        onClick={() => handleDeleteManga(m.id, m.title)}
-                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
-                        title="حذف المانجا وفصولها نهائياً"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="p-4 sm:p-5 text-left">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* Manage Chapters */}
+                        <button
+                          onClick={() => handleOpenChapters(m)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition-colors"
+                          title="إدارة الفصول"
+                        >
+                          <Layers className="w-4 h-4" />
+                        </button>
 
-                      {/* View on site */}
-                      <Link
-                        href={`/manga/${m.id}`}
-                        target="_blank"
-                        className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                        title="عرض العمل بالموقع"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {/* Edit Manga Details */}
+                        <button
+                          onClick={() => handleOpenEdit(m)}
+                          className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors"
+                          title="تعديل بيانات العمل"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+
+                        {/* Re-sync */}
+                        <button
+                          onClick={() => handleReSyncSingle(m.id)}
+                          disabled={reSyncingId === m.id}
+                          className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                          title="مزامنة الفصول الجديدة"
+                        >
+                          {reSyncingId === m.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </button>
+
+                        {/* Delete Single Manga */}
+                        <button
+                          onClick={() => handleDeleteManga(m.id, m.title)}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
+                          title="حذف المانجا وفصولها نهائياً"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        {/* View on site */}
+                        <Link
+                          href={`/manga/${m.id}`}
+                          target="_blank"
+                          className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                          title="عرض العمل بالموقع"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Floating Bottom Sticky Action Bar when items are selected */}
+      {selectedMangaIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-md border border-slate-700 dark:border-zinc-800 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF334B] animate-ping" />
+            <span className="text-xs sm:text-sm font-bold">
+              تم تحديد <strong className="text-[#FF334B]">{selectedMangaIds.length}</strong> أعمال
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-700 dark:bg-zinc-800" />
+
+          <button
+            onClick={handleBulkDeleteSelected}
+            disabled={deletingBulk}
+            className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-lg shadow-red-500/25 transition-all flex items-center gap-1.5"
+          >
+            {deletingBulk ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
+            <span>حذف المحدد الآن</span>
+          </button>
+
+          <button
+            onClick={handleClearSelection}
+            className="text-xs text-slate-400 hover:text-white font-bold transition-colors"
+          >
+            إلغاء
+          </button>
+        </div>
+      )}
 
       {/* Edit Manga Modal */}
       {editingManga && (
