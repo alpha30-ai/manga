@@ -11,6 +11,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ensureMangaInDb } from "@/lib/mangaSync";
 import { getSafeImageUrl } from "@/lib/imageUtils";
+import memoryCache from "@/lib/cache";
 
 export default async function MangaDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,48 +21,68 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
   let chapters: any[] = [];
   let sourceName = "MangaDex";
 
-  // 1. Check local PostgreSQL database first
-  const dbManga = await prisma.manga.findUnique({
-    where: { id },
-    include: {
-      chapters: {
-        orderBy: { chapterNum: "desc" },
-      },
-    },
-  });
+  // 0. Check in-memory cache first for sub-millisecond retrieval
+  const cacheKey = `manga_details_full:${id}`;
+  const cachedData = memoryCache.get<{ manga: any; chapters: any[]; sourceName: string }>(cacheKey);
 
-  if (dbManga) {
-    manga = {
-      id: dbManga.id,
-      title: dbManga.title,
-      description: dbManga.description,
-      coverImage: dbManga.coverImage,
-      author: dbManga.author || "غير معروف",
-      status: dbManga.status || "مستمر",
-      genres: dbManga.genres || [],
-    };
-    chapters = dbManga.chapters.map((c) => ({
-      id: c.id,
-      title: c.title,
-      chapterNum: c.chapterNum,
-      publishedAt: c.createdAt,
-      language: "ar",
-    }));
-    sourceName = dbManga.source || "المصدر الأصلي";
+  if (cachedData) {
+    manga = cachedData.manga;
+    chapters = cachedData.chapters;
+    sourceName = cachedData.sourceName;
+  }
+
+  // 1. Check local PostgreSQL database if not in memory cache
+  if (!manga || chapters.length === 0) {
+    try {
+      const dbManga = await prisma.manga.findUnique({
+        where: { id },
+        include: {
+          chapters: {
+            orderBy: { chapterNum: "desc" },
+            select: {
+              id: true,
+              title: true,
+              chapterNum: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+
+      if (dbManga) {
+        manga = {
+          id: dbManga.id,
+          title: dbManga.title,
+          description: dbManga.description,
+          coverImage: dbManga.coverImage,
+          author: dbManga.author || "غير معروف",
+          status: dbManga.status || "مستمر",
+          genres: dbManga.genres || [],
+        };
+        chapters = dbManga.chapters.map((c) => ({
+          id: c.id,
+          title: c.title,
+          chapterNum: c.chapterNum,
+          publishedAt: c.createdAt,
+          language: "ar",
+        }));
+        sourceName = dbManga.source || "المصدر الأصلي";
+      }
+    } catch (e) {
+      console.warn("DB manga findUnique error:", e);
+    }
   }
 
   // 2. If chapters are empty, check if ID is a base64url encoded URL or if sourceId is present
   if (chapters.length === 0) {
-    let targetUrl = dbManga?.sourceId || "";
+    let targetUrl = "";
 
-    if (!targetUrl) {
-      try {
-        const decoded = Buffer.from(id, "base64url").toString("utf-8");
-        if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
-          targetUrl = decoded;
-        }
-      } catch (e) {}
-    }
+    try {
+      const decoded = Buffer.from(id, "base64url").toString("utf-8");
+      if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+        targetUrl = decoded;
+      }
+    } catch (e) {}
 
     if (targetUrl) {
       try {
@@ -101,7 +122,8 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
         chapters = fetchedChapters;
         if (!sourceName || sourceName === "المصدر الأصلي") sourceName = "MangaDex";
 
-        await ensureMangaInDb({
+        // Asynchronous non-blocking DB persistence
+        ensureMangaInDb({
           id: manga.id,
           title: manga.title,
           description: manga.description,
@@ -110,59 +132,22 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
           status: manga.status,
           genres: manga.genres,
           source: sourceName,
-        });
+        }).catch(() => {});
       }
     } catch (e) {
       console.error("MangaDex fetch error:", e);
     }
   }
 
-  // 4. If chapters are STILL 0, derive title and search Arabic providers automatically!
-  if (chapters.length === 0) {
-    let searchTitle = manga?.title || "";
-    if (!searchTitle || searchTitle === "عمل مانجا" || searchTitle === "غير متوفر") {
-      let rawUrl = dbManga?.sourceId || "";
-      if (!rawUrl) {
-        try {
-          const decoded = Buffer.from(id, "base64url").toString("utf-8");
-          if (decoded.startsWith("http")) rawUrl = decoded;
-        } catch {}
+  // 4. Fallback search for Arabic chapters if empty
+  if (chapters.length === 0 && manga?.title) {
+    try {
+      const arabicResult = await arabicFallbackCrawler.findArabicMangaAndChapters(manga.title, id);
+      if (arabicResult && arabicResult.chapters.length > 0) {
+        chapters = arabicResult.chapters;
       }
-      if (rawUrl) {
-        const slugMatch = rawUrl.match(/\/manga\/([^/]+)/) || rawUrl.match(/\/series\/([^/]+)/);
-        if (slugMatch) {
-          searchTitle = decodeURIComponent(slugMatch[1]).replace(/[-_]/g, " ").trim();
-        }
-      }
-    }
-
-    if (searchTitle) {
-      try {
-        const arabicResult = await arabicFallbackCrawler.findArabicMangaAndChapters(searchTitle, id);
-        if (arabicResult && arabicResult.chapters.length > 0) {
-          chapters = arabicResult.chapters;
-          if (!manga || manga.title === "عمل مانجا" || manga.title === "غير متوفر") {
-            manga = {
-              id,
-              title: arabicResult.manga.title,
-              description: arabicResult.manga.description,
-              coverImage: arabicResult.manga.coverImage,
-              author: arabicResult.manga.author || "غير معروف",
-              status: arabicResult.manga.status || "مستمر",
-              genres: arabicResult.manga.genres || ["مانجا"],
-            };
-          } else {
-            if (!manga.description || manga.description === "جاري تحديث الفصول والبيانات من المصدر...") {
-              manga.description = arabicResult.manga.description;
-            }
-            if (!manga.coverImage) {
-              manga.coverImage = arabicResult.manga.coverImage;
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Arabic fallback search error:", err);
-      }
+    } catch (err) {
+      console.error("Arabic fallback search error:", err);
     }
   }
 
@@ -179,18 +164,33 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
     };
   }
 
+  // Save to memory cache for fast subsequent visits
+  if (chapters.length > 0) {
+    memoryCache.set(cacheKey, { manga, chapters, sourceName }, 1800);
+  }
+
   // Get user reading history
-  const userHistory = session?.user?.id
-    ? await prisma.readingHistory.findUnique({
+  let userHistory = null;
+  if (session?.user?.id) {
+    try {
+      userHistory = await prisma.readingHistory.findUnique({
         where: {
           userId_mangaId: {
             userId: session.user.id,
             mangaId: manga.id,
           },
         },
-        include: { chapter: true },
-      })
-    : null;
+        select: {
+          chapterId: true,
+          chapter: {
+            select: { chapterNum: true },
+          },
+        },
+      });
+    } catch (e) {
+      console.warn("History lookup error:", e);
+    }
+  }
 
   const lastReadChapterId = userHistory?.chapterId || null;
   const lastReadChapterNum = userHistory?.chapter?.chapterNum || null;

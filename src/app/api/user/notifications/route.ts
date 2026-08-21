@@ -14,9 +14,10 @@ export async function GET(req: Request) {
     let notifications = await prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      take: 50,
     });
 
-    // If user has 0 notifications, create a welcome notification
+    // If user has 0 notifications, create a friendly welcome notification
     if (notifications.length === 0) {
       try {
         const welcome = await prisma.notification.create({
@@ -48,19 +49,24 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { notificationId, markAllAsRead } = await req.json();
+    const body = await req.json();
+    const notificationId = body.notificationId || body.id;
+    const markAllAsRead = body.markAllAsRead;
 
     if (markAllAsRead) {
       await prisma.notification.updateMany({
         where: { userId, isRead: false },
         data: { isRead: true },
       });
-      return NextResponse.json({ success: true, message: "تم تحديد جميع الإشعارات كمقروءة" });
+      return NextResponse.json({
+        success: true,
+        message: "تم تحديد جميع الإشعارات كمقروءة",
+      });
     }
 
     if (notificationId) {
-      const notification = await prisma.notification.update({
-        where: { id: notificationId },
+      const notification = await prisma.notification.updateMany({
+        where: { id: notificationId, userId },
         data: { isRead: true },
       });
       return NextResponse.json({ success: true, notification });
@@ -81,20 +87,28 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { notificationId, clearAll } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const notificationId = body.notificationId || body.id;
+    const clearAll = body.clearAll;
 
     if (clearAll) {
       await prisma.notification.deleteMany({
         where: { userId },
       });
-      return NextResponse.json({ success: true, message: "تم مسح جميع الإشعارات" });
+      return NextResponse.json({
+        success: true,
+        message: "تم مسح جميع الإشعارات بنجاح",
+      });
     }
 
     if (notificationId) {
-      await prisma.notification.delete({
-        where: { id: notificationId },
+      await prisma.notification.deleteMany({
+        where: { id: notificationId, userId },
       });
-      return NextResponse.json({ success: true, message: "تم حذف الإشعار" });
+      return NextResponse.json({
+        success: true,
+        message: "تم حذف الإشعار",
+      });
     }
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });

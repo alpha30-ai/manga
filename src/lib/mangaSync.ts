@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import memoryCache from "@/lib/cache";
 
 export async function ensureMangaInDb(data: {
   id: string;
@@ -11,7 +12,7 @@ export async function ensureMangaInDb(data: {
   genres?: string[];
 }) {
   try {
-    return await prisma.manga.upsert({
+    const manga = await prisma.manga.upsert({
       where: { id: data.id },
       update: {
         title: data.title || "بدون عنوان",
@@ -34,6 +35,10 @@ export async function ensureMangaInDb(data: {
         source: data.source || "MangaDex",
       },
     });
+
+    // Populate memory cache
+    memoryCache.set(`manga:${data.id}`, manga, 1800);
+    return manga;
   } catch (error) {
     console.error("Error ensuring manga in DB:", error);
     return null;
@@ -48,12 +53,12 @@ export async function ensureChapterInDb(data: {
   pages?: string[];
 }) {
   try {
-    return await prisma.chapter.upsert({
+    const chapter = await prisma.chapter.upsert({
       where: { id: data.id },
       update: {
         title: data.title || "الفصل",
         chapterNum: data.chapterNum ?? 1,
-        pages: data.pages || [],
+        ...(data.pages && data.pages.length > 0 ? { pages: data.pages } : {}),
         updatedAt: new Date(),
       },
       create: {
@@ -64,6 +69,13 @@ export async function ensureChapterInDb(data: {
         pages: data.pages || [],
       },
     });
+
+    // Populate memory cache
+    memoryCache.set(`chapter:${data.id}`, chapter, 1800);
+    if (data.pages && data.pages.length > 0) {
+      memoryCache.set(`chapter_pages:${data.id}`, data.pages, 86400);
+    }
+    return chapter;
   } catch (error) {
     console.error("Error ensuring chapter in DB:", error);
     return null;

@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ensureChapterInDb, ensureMangaInDb } from "@/lib/mangaSync";
+import memoryCache from "@/lib/cache";
 
 export default async function ChapterPage({
   params,
@@ -21,6 +22,12 @@ export default async function ChapterPage({
   let chapters: any[] = [];
   let userSettings: any = null;
   let currentChapterInfo: any = null;
+
+  // 0. Check in-memory cache first for sub-millisecond reader loading
+  const cachedPages = memoryCache.get<string[]>(`chapter_pages:${chapterId}`);
+  if (cachedPages && cachedPages.length > 0) {
+    pages = cachedPages;
+  }
 
   try {
     // 1. Check if chapter & manga exist in local PostgreSQL database
@@ -39,8 +46,9 @@ export default async function ChapterPage({
 
     if (cachedChapter) {
       currentChapterInfo = cachedChapter;
-      if (cachedChapter.pages && cachedChapter.pages.length > 0) {
+      if ((!pages || pages.length === 0) && cachedChapter.pages && cachedChapter.pages.length > 0) {
         pages = cachedChapter.pages;
+        memoryCache.set(`chapter_pages:${chapterId}`, pages, 86400);
       }
       if (cachedChapter.manga) {
         mangaTitle = cachedChapter.manga.title;
@@ -71,8 +79,9 @@ export default async function ChapterPage({
         pages = await universalUrlScraper.scrapeChapterPages(chapterUrl);
 
         if (pages.length > 0) {
-          // Cache pages in DB
-          await prisma.chapter
+          memoryCache.set(`chapter_pages:${chapterId}`, pages, 86400);
+          // Cache pages in DB asynchronously
+          prisma.chapter
             .update({
               where: { id: chapterId },
               data: { pages },
@@ -83,6 +92,9 @@ export default async function ChapterPage({
         // B. MangaDex Scraper
         const scraper = new MangaDexScraper();
         pages = await scraper.getChapterPages(chapterId);
+        if (pages.length > 0) {
+          memoryCache.set(`chapter_pages:${chapterId}`, pages, 86400);
+        }
         if (chapters.length === 0) {
           chapters = await scraper.getChapters(id);
         }
@@ -103,7 +115,8 @@ export default async function ChapterPage({
       );
       if (fallbackPages.length > 0) {
         pages = fallbackPages;
-        await prisma.chapter
+        memoryCache.set(`chapter_pages:${chapterId}`, pages, 86400);
+        prisma.chapter
           .update({
             where: { id: chapterId },
             data: { pages },
