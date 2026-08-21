@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bookmark, BookmarkCheck, Play, Share2, Loader2, Sparkles } from "lucide-react";
+import { Bookmark, BookmarkCheck, Play, Share2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
@@ -31,7 +31,6 @@ export default function MangaActions({
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
 
   useEffect(() => {
     // Check initial favorite status
@@ -46,8 +45,6 @@ export default function MangaActions({
         }
       } catch (e) {
         console.error("Failed to check favorite status:", e);
-      } finally {
-        setInitialLoaded(true);
       }
     };
 
@@ -84,15 +81,16 @@ export default function MangaActions({
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.status === 401) {
         setIsFavorite(previousState);
         toast.error("انتهت جلستك، يرجى تسجيل الدخول مجدداً");
-        router.push("/auth/login");
+        router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
         return;
       }
 
       if (res.ok) {
-        const data = await res.json();
         setIsFavorite(data.isFavorite);
         if (data.isFavorite) {
           toast.success("تمت إضافة العمل إلى قائمة المفضلة ❤️");
@@ -102,7 +100,7 @@ export default function MangaActions({
       } else {
         // Revert on error
         setIsFavorite(previousState);
-        toast.error("تعذر حفظ التغيير، يرجى المحاولة لاحقاً");
+        toast.error(data.error || "تعذر حفظ التغيير، يرجى المحاولة لاحقاً");
       }
     } catch (e) {
       console.error("Favorite toggle error:", e);

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { MangaDexScraper } from "@/lib/scrapers/mangadex";
 import { universalUrlScraper } from "@/lib/scrapers/universalUrlScraper";
+import { arabicFallbackCrawler } from "@/lib/scrapers/arabicFallbackCrawler";
 import { localizeMangaContent } from "@/lib/arabicMangaMap";
 
 export interface CrawlResult {
@@ -10,6 +11,7 @@ export interface CrawlResult {
   pagesIndexed: number;
   status: "success" | "error";
   error?: string;
+  source?: string;
 }
 
 export class MangaCrawlerService {
@@ -20,27 +22,92 @@ export class MangaCrawlerService {
   }
 
   /**
+   * Searches across Arabic sources and MangaDex simultaneously
+   */
+  async searchAllSources(query: string) {
+    const cleanQuery = query.trim();
+    const isUrl = cleanQuery.startsWith("http://") || cleanQuery.startsWith("https://");
+
+    if (isUrl) {
+      return [
+        {
+          id: cleanQuery,
+          title: "رابط مباشر (URL)",
+          url: cleanQuery,
+          coverImage: "",
+          source: "رابط خارجي",
+        },
+      ];
+    }
+
+    const [arabicResults, mangadexResults] = await Promise.allSettled([
+      arabicFallbackCrawler.searchAllArabicSources(cleanQuery),
+      this.scraper.searchManga(cleanQuery, { limit: 5 }),
+    ]);
+
+    const aggregated: Array<{
+      id: string;
+      title: string;
+      url?: string;
+      coverImage?: string;
+      source: string;
+      latestChapter?: string;
+    }> = [];
+
+    // Add Arabic search results first (highest priority)
+    if (arabicResults.status === "fulfilled" && Array.isArray(arabicResults.value)) {
+      arabicResults.value.forEach((item) => {
+        aggregated.push({
+          id: item.url,
+          title: item.title,
+          url: item.url,
+          coverImage: item.coverImage,
+          source: item.source,
+          latestChapter: item.latestChapter,
+        });
+      });
+    }
+
+    // Add MangaDex results
+    if (mangadexResults.status === "fulfilled" && Array.isArray(mangadexResults.value)) {
+      mangadexResults.value.forEach((item) => {
+        aggregated.push({
+          id: item.id,
+          title: item.title,
+          url: `https://mangadex.org/title/${item.id}`,
+          coverImage: item.coverImage,
+          source: "MangaDex",
+          latestChapter: undefined,
+        });
+      });
+    }
+
+    return aggregated;
+  }
+
+  /**
    * Crawls a single Manga by ID or URL, extracts all its details and all chapters,
    * saves/upserts everything cleanly into PostgreSQL via Prisma, and pre-caches latest chapter pages.
    */
-  async crawlAndSaveManga(mangaIdOrUrl: string, preCacheLatestPages = true): Promise<CrawlResult> {
+  async crawlAndSaveManga(mangaIdOrUrl: string, preCacheLatestPages = true, customSource?: string): Promise<CrawlResult> {
     try {
       const isUrl = mangaIdOrUrl.startsWith("http://") || mangaIdOrUrl.startsWith("https://");
 
       if (isUrl) {
-        const { manga, chaptersCount } = await universalUrlScraper.scrapeAndSaveToDb(mangaIdOrUrl);
+        const { manga, chaptersCount } = await universalUrlScraper.scrapeAndSaveToDb(mangaIdOrUrl, customSource);
         return {
           mangaId: manga.id,
           title: manga.title,
           chaptersCount,
           pagesIndexed: 0,
           status: "success",
+          source: manga.source || customSource || "رابط خارجي",
         };
       }
 
       const mangaId = mangaIdOrUrl;
 
-      // 1. Fetch details
+      // 1. Fetch details from MangaDex
       const details = await this.scraper.getMangaDetails(mangaId);
       if (!details || details.title === "غير متوفر" || details.title === "خطأ في التحميل") {
         throw new Error(`تعذر العثور على المانجا بالمعرف ${mangaId}`);
@@ -58,7 +125,7 @@ export class MangaCrawlerService {
           author: localized.author || "غير معروف",
           status: localized.status || "مستمر",
           genres: localized.genres || [],
-          source: "mangadex",
+          source: "MangaDex",
           sourceId: mangaId,
         },
         create: {
@@ -69,12 +136,12 @@ export class MangaCrawlerService {
           author: localized.author || "غير معروف",
           status: localized.status || "مستمر",
           genres: localized.genres || [],
-          source: "mangadex",
+          source: "MangaDex",
           sourceId: mangaId,
         },
       });
 
-      // 3. Fetch all chapters (paginated exhaustive loop)
+      // 3. Fetch all chapters
       const chapters = await this.scraper.getChapters(mangaId);
       let totalPages = 0;
 
@@ -92,10 +159,9 @@ export class MangaCrawlerService {
         if (existingChap?.pages && existingChap.pages.length > 0) {
           pages = existingChap.pages;
         } else if (preCacheLatestPages && i < 3) {
-          // Pre-cache only the first 3 latest chapters during bulk crawl to respect API rate limits
           try {
             pages = await this.scraper.getChapterPages(chap.id);
-            await new Promise((resolve) => setTimeout(resolve, 300)); // Respectful delay
+            await new Promise((resolve) => setTimeout(resolve, 200));
           } catch (err) {
             pages = [];
           }
@@ -126,6 +192,7 @@ export class MangaCrawlerService {
         chaptersCount: chapters.length,
         pagesIndexed: totalPages,
         status: "success",
+        source: "MangaDex",
       };
     } catch (error: any) {
       console.error(`Crawl error for ${mangaIdOrUrl}:`, error);
@@ -160,54 +227,17 @@ export class MangaCrawlerService {
    */
   async syncAllTrackedMangas(): Promise<CrawlResult[]> {
     const existingMangas = await prisma.manga.findMany({
-      select: { id: true, title: true },
+      select: { id: true, title: true, sourceId: true, source: true },
     });
 
     const results: CrawlResult[] = [];
     for (const m of existingMangas) {
-      const res = await this.crawlAndSaveManga(m.id, true);
+      const target = m.sourceId || m.id;
+      const res = await this.crawlAndSaveManga(target, false, m.source || undefined);
       results.push(res);
     }
 
     return results;
-  }
-
-  /**
-   * Scrapes and caches a specific chapter's pages directly into PostgreSQL if not present.
-   */
-  async ensureChapterPages(chapterId: string, mangaId: string): Promise<string[]> {
-    try {
-      const chapter = await prisma.chapter.findUnique({
-        where: { id: chapterId },
-        select: { pages: true },
-      });
-
-      if (chapter?.pages && chapter.pages.length > 0) {
-        return chapter.pages;
-      }
-
-      // Fetch fresh pages from API
-      const pages = await this.scraper.getChapterPages(chapterId);
-      if (pages.length > 0) {
-        // Save to DB
-        await prisma.chapter.upsert({
-          where: { id: chapterId },
-          update: { pages },
-          create: {
-            id: chapterId,
-            mangaId,
-            title: `الفصل`,
-            chapterNum: 0,
-            pages,
-          },
-        });
-      }
-
-      return pages;
-    } catch (e) {
-      console.error(`ensureChapterPages error for ${chapterId}:`, e);
-      return [];
-    }
   }
 }
 

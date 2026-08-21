@@ -7,7 +7,14 @@ import { ensureMangaInDb } from "@/lib/mangaSync";
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    let userId = (session?.user as any)?.id;
+    if (!userId && session?.user?.email) {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      userId = dbUser?.id;
+    }
 
     const { searchParams } = new URL(req.url);
     const mangaId = searchParams.get("mangaId");
@@ -53,7 +60,17 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    let userId = (session?.user as any)?.id;
+    
+    // Resilient fallback: find user ID by email if token.id is not populated
+    if (!userId && session?.user?.email) {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      userId = dbUser?.id;
+    }
+
     if (!userId) {
       return NextResponse.json(
         { error: "يرجى تسجيل الدخول أولاً لإضافة المانجا إلى مفضلتك" },
@@ -63,26 +80,41 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const mangaId = body.mangaId || body.id;
-    const title = body.title;
-    const coverImage = body.coverImage;
-    const author = body.author;
-    const status = body.status;
-    const genres = body.genres;
+    const title = body.title || "مانجا";
+    const coverImage = body.coverImage || "";
+    const author = body.author || "غير معروف";
+    const status = body.status || "مستمر";
+    const genres = Array.isArray(body.genres) ? body.genres : [];
 
     if (!mangaId) {
-      return NextResponse.json({ error: "Missing mangaId" }, { status: 400 });
+      return NextResponse.json({ error: "معرف المانجا مفقود" }, { status: 400 });
     }
 
-    // Ensure manga exists in database
-    await ensureMangaInDb({
-      id: mangaId,
-      title: title || "مانجا",
-      coverImage: coverImage || "",
-      author: author || "غير معروف",
-      status: status || "مستمر",
-      genres: Array.isArray(genres) ? genres : [],
-    });
+    // 1. Ensure manga exists in DB before creating favorite
+    try {
+      await prisma.manga.upsert({
+        where: { id: mangaId },
+        update: {
+          title,
+          coverImage,
+          author,
+          status,
+          genres,
+        },
+        create: {
+          id: mangaId,
+          title,
+          coverImage,
+          author,
+          status,
+          genres,
+        },
+      });
+    } catch (mangaErr) {
+      console.warn("Manga upsert in favorites warning:", mangaErr);
+    }
 
+    // 2. Check if already favorited
     const existing = await prisma.favorite.findUnique({
       where: {
         userId_mangaId: {
@@ -113,16 +145,27 @@ export async function POST(req: Request) {
         message: "تمت إضافة العمل إلى المفضلة بنجاح ❤️",
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Favorites POST error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "حدث خطأ أثناء حفظ المفضلة" },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    let userId = (session?.user as any)?.id;
+    if (!userId && session?.user?.email) {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      userId = dbUser?.id;
+    }
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

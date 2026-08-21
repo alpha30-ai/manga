@@ -4,7 +4,77 @@ import { ChapterInfo, MangaDetails } from "./index";
 import { stealthFetchHtml } from "./stealthFetcher";
 import prisma from "@/lib/prisma";
 
+export interface ArabicSearchResult {
+  title: string;
+  url: string;
+  coverImage?: string;
+  source: string;
+  latestChapter?: string;
+}
+
 export class ArabicFallbackCrawler {
+  private providers = [
+    { name: "3asq (العاشق)", baseUrl: "https://3asq.online/?s={QUERY}&post_type=wp-manga" },
+    { name: "Kenmanga", baseUrl: "https://ar.kenmanga.com/?s={QUERY}&post_type=wp-manga" },
+    { name: "LavaScans", baseUrl: "https://lavascans.com/?s={QUERY}&post_type=wp-manga" },
+    { name: "RocksManga", baseUrl: "https://rocksmanga.com/?s={QUERY}&post_type=wp-manga" },
+    { name: "Olympus", baseUrl: "https://olympustaff.com/?s={QUERY}&post_type=wp-manga" },
+    { name: "MangaLik", baseUrl: "https://mangalik.net/?s={QUERY}&post_type=wp-manga" },
+  ];
+
+  /**
+   * Searches across all popular Arabic manga translation sites and returns matched results
+   */
+  async searchAllArabicSources(query: string): Promise<ArabicSearchResult[]> {
+    const cleanQuery = query
+      .replace(/\(.*?\)/g, "")
+      .replace(/\[.*?\]/g, "")
+      .trim();
+
+    if (!cleanQuery || cleanQuery.length < 2) return [];
+
+    const results: ArabicSearchResult[] = [];
+    const promises = this.providers.map(async (provider) => {
+      try {
+        const searchUrl = provider.baseUrl.replace("{QUERY}", encodeURIComponent(cleanQuery));
+        const html = await stealthFetchHtml(searchUrl);
+        const $ = cheerio.load(html);
+
+        $(".c-tabs-item__content, .page-item-detail, .row.c-tabs-item__content, .bsx, .item, .manga-item, .search-wrap .row").each((_, el) => {
+          const titleEl = $(el).find(".post-title a, h3 a, h4 a, .tt a, .series-title a, .title a").first();
+          const title = titleEl.text().trim();
+          const url = titleEl.attr("href");
+
+          let coverImage =
+            $(el).find("img").first().attr("src") ||
+            $(el).find("img").first().attr("data-src") ||
+            $(el).find("img").first().attr("data-lazy-src") ||
+            "";
+
+          const latestChap = $(el).find(".chapter a, .latest-chap, .epxs").first().text().trim();
+
+          if (url && title && (url.includes("/manga/") || url.includes("/series/") || url.includes("/comic/") || url.includes("/manhwa/"))) {
+            // Avoid duplicate URLs
+            if (!results.some((r) => r.url === url)) {
+              results.push({
+                title,
+                url: url.startsWith("http") ? url : new URL(url, searchUrl).toString(),
+                coverImage,
+                source: provider.name,
+                latestChapter: latestChap || undefined,
+              });
+            }
+          }
+        });
+      } catch (e) {
+        // Individual provider timeout/error is skipped
+      }
+    });
+
+    await Promise.allSettled(promises);
+    return results;
+  }
+
   /**
    * Searches verified Arabic providers for a manga by title and returns full chapters.
    */
@@ -12,85 +82,57 @@ export class ArabicFallbackCrawler {
     title: string,
     mangaIdToAttach?: string
   ): Promise<{ manga: MangaDetails; chapters: ChapterInfo[] } | null> {
-    const cleanTitle = title
-      .replace(/\(.*?\)/g, "")
-      .replace(/\[.*?\]/g, "")
-      .replace(/–|-/g, " ")
-      .trim();
+    const searchResults = await this.searchAllArabicSources(title);
 
-    if (!cleanTitle || cleanTitle.length < 2) return null;
-
-    const providers = [
-      `https://3asq.online/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-      `https://ar.kenmanga.com/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-      `https://lavascans.com/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-      `https://rocksmanga.com/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-      `https://olympustaff.com/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-      `https://mangalik.net/?s=${encodeURIComponent(cleanTitle)}&post_type=wp-manga`,
-    ];
-
-    for (const searchUrl of providers) {
+    for (const item of searchResults) {
       try {
-        const html = await stealthFetchHtml(searchUrl);
-        const $ = cheerio.load(html);
+        const scraped = await universalUrlScraper.scrapeUrl(item.url, item.source);
+        if (scraped.chapters.length > 0) {
+          // If mangaIdToAttach is provided, upsert into PostgreSQL
+          if (mangaIdToAttach) {
+            await prisma.manga.upsert({
+              where: { id: mangaIdToAttach },
+              update: {
+                title: scraped.manga.title || item.title,
+                description: scraped.manga.description,
+                coverImage: scraped.manga.coverImage || item.coverImage || "",
+                source: item.source,
+                sourceId: item.url,
+              },
+              create: {
+                id: mangaIdToAttach,
+                title: scraped.manga.title || item.title,
+                description: scraped.manga.description,
+                coverImage: scraped.manga.coverImage || item.coverImage || "",
+                source: item.source,
+                sourceId: item.url,
+                genres: scraped.manga.genres || ["مانجا"],
+                status: scraped.manga.status || "مستمر",
+              },
+            });
 
-        let targetHref = "";
-        $(".c-tabs-item__content, .page-item-detail, .row.c-tabs-item__content, .bsx, .item, .manga-item").each((_, el) => {
-          if (!targetHref) {
-            const href = $(el).find(".post-title a, h3 a, h4 a, .tt a, .series-title a, a").first().attr("href");
-            if (href && (href.includes("/manga/") || href.includes("/series/") || href.includes("/comic/"))) {
-              targetHref = href;
-            }
-          }
-        });
-
-        if (targetHref) {
-          const scraped = await universalUrlScraper.scrapeUrl(targetHref);
-          if (scraped.chapters.length > 0) {
-            // If mangaIdToAttach is provided, upsert into PostgreSQL
-            if (mangaIdToAttach) {
-              await prisma.manga.upsert({
-                where: { id: mangaIdToAttach },
+            for (const ch of scraped.chapters) {
+              await prisma.chapter.upsert({
+                where: { id: ch.id },
                 update: {
-                  title: scraped.manga.title,
-                  description: scraped.manga.description,
-                  coverImage: scraped.manga.coverImage || "",
-                  sourceId: targetHref,
+                  title: ch.title,
+                  chapterNum: ch.chapterNum,
                 },
                 create: {
-                  id: mangaIdToAttach,
-                  title: scraped.manga.title,
-                  description: scraped.manga.description,
-                  coverImage: scraped.manga.coverImage || "",
-                  sourceId: targetHref,
-                  genres: scraped.manga.genres || ["مانجا"],
-                  status: scraped.manga.status || "مستمر",
+                  id: ch.id,
+                  mangaId: mangaIdToAttach,
+                  title: ch.title,
+                  chapterNum: ch.chapterNum,
+                  pages: [],
                 },
               });
-
-              for (const ch of scraped.chapters) {
-                await prisma.chapter.upsert({
-                  where: { id: ch.id },
-                  update: {
-                    title: ch.title,
-                    chapterNum: ch.chapterNum,
-                  },
-                  create: {
-                    id: ch.id,
-                    mangaId: mangaIdToAttach,
-                    title: ch.title,
-                    chapterNum: ch.chapterNum,
-                    pages: [],
-                  },
-                });
-              }
             }
-
-            return scraped;
           }
+
+          return scraped;
         }
       } catch (e) {
-        // Try next provider
+        // Try next match
       }
     }
 
