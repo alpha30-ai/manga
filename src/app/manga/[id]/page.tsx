@@ -110,18 +110,18 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
     }
   }
 
-  // 3. If still no manga or chapters (e.g. MangaDex UUID)
+  // 3. If still no manga or chapters (e.g. MangaDex UUID or Arabic title)
   if (!manga || chapters.length === 0) {
     const scraper = new MangaDexScraper();
     try {
       const [fetchedManga, fetchedChapters] = await Promise.all([
         manga || scraper.getMangaDetails(id),
-        chapters.length > 0 ? chapters : scraper.getChapters(id),
+        chapters.length > 0 ? chapters : scraper.getChapters(id, "ar"),
       ]);
       if (fetchedManga && fetchedManga.title !== "غير متوفر") {
         manga = fetchedManga;
         chapters = fetchedChapters;
-        if (!sourceName || sourceName === "المصدر الأصلي") sourceName = "MangaDex";
+        if (!sourceName || sourceName === "المصدر الأصلي") sourceName = "ترجمة عربية معتمدة";
 
         // Asynchronous non-blocking DB persistence
         ensureMangaInDb({

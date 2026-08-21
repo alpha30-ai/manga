@@ -7,22 +7,37 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+function getConnectionString(): string {
+  let connectionString =
+    process.env.DATABASE_URL ||
+    "postgresql://postgres:postgres@localhost:5432/manga";
+
+  // Automatically switch Supabase Session Pooler (port 5432, max 15 limit)
+  // to Transaction Mode (port 6543, unlimited concurrent clients)
+  if (connectionString.includes("pooler.supabase.com:5432")) {
+    connectionString = connectionString.replace(":5432", ":6543");
+    if (!connectionString.includes("pgbouncer=true")) {
+      connectionString += (connectionString.includes("?") ? "&" : "?") + "pgbouncer=true";
+    }
+  }
+
+  return connectionString;
+}
+
 function getPool(): Pool {
   if (!globalForPrisma.pool) {
-    const connectionString =
-      process.env.DATABASE_URL ||
-      "postgresql://postgres:postgres@localhost:5432/manga";
+    const connectionString = getConnectionString();
 
     globalForPrisma.pool = new Pool({
       connectionString,
-      max: 1, // 1 connection per serverless lambda to stay strictly within Supabase 15-client session mode
-      idleTimeoutMillis: 1000, // Terminate idle connections after 1s
-      connectionTimeoutMillis: 6000,
+      max: 10,
+      idleTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
       allowExitOnIdle: true,
     });
 
     globalForPrisma.pool.on("error", (err) => {
-      console.error("PostgreSQL Pool error:", err);
+      console.warn("PostgreSQL Pool warning:", err?.message || err);
     });
   }
   return globalForPrisma.pool;

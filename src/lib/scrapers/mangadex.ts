@@ -196,25 +196,18 @@ export class MangaDexScraper implements BaseScraper {
   }
 
   /**
-   * Smart Language-Aware Chapter Fetching System
-   * Fetches chapters matching the exact language requested ('ar' for Arabic, 'en' for English).
+   * Pure Language Chapter Fetching System
+   * If requestedLang === "ar", strictly pulls ONLY Arabic translated chapters (NEVER falls back to English).
    */
-  async getChapters(mangaId: string, requestedLang?: "ar" | "en"): Promise<ChapterInfo[]> {
+  async getChapters(mangaId: string, requestedLang: "ar" | "en" = "ar"): Promise<ChapterInfo[]> {
     try {
       let rawChapters: any[] = [];
       const limit = 100;
       let offset = 0;
       let total = 100;
 
-      // Determine language query filter
-      let langParam = "";
-      if (requestedLang === "ar") {
-        langParam = "translatedLanguage[]=ar";
-      } else if (requestedLang === "en") {
-        langParam = "translatedLanguage[]=en";
-      } else {
-        langParam = "translatedLanguage[]=ar&translatedLanguage[]=en";
-      }
+      // Determine language query filter strictly
+      const langParam = requestedLang === "ar" ? "translatedLanguage[]=ar" : "translatedLanguage[]=en";
 
       // Paginated Fetch Loop to guarantee complete chapter retrieval
       while (offset < total && offset < 2000) {
@@ -234,26 +227,10 @@ export class MangaDexScraper implements BaseScraper {
         }
       }
 
-      // Fallback: If 0 chapters found in strict language mode, check English (or all feeds)
-      if (rawChapters.length === 0 && requestedLang === "ar") {
-        let fallbackOffset = 0;
-        let fallbackTotal = 100;
-
-        while (fallbackOffset < fallbackTotal && fallbackOffset < 1000) {
-          const fallbackUrl = `${MANGADEX_API}/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=desc&limit=100&offset=${fallbackOffset}&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-          const fallbackRes = await fetch(fallbackUrl, { next: { revalidate: 900 } });
-          if (!fallbackRes.ok) break;
-
-          const fallbackData = await fallbackRes.json();
-          if (fallbackData?.data && Array.isArray(fallbackData.data)) {
-            rawChapters.push(...fallbackData.data);
-            fallbackTotal = fallbackData.total || 0;
-            fallbackOffset += 100;
-            if (fallbackData.data.length < 100) break;
-          } else {
-            break;
-          }
-        }
+      // If requestedLang === "ar" and 0 chapters found on MangaDex, return []
+      // This ensures the system searches the actual Arabic scanlation websites instead of displaying English chapters!
+      if (rawChapters.length === 0) {
+        return [];
       }
 
       // Clean, Deduplicate & Localize chapters
@@ -262,7 +239,7 @@ export class MangaDexScraper implements BaseScraper {
       for (const chap of rawChapters) {
         const chapAttr = chap.attributes || {};
         const chapNum = parseFloat(chapAttr.chapter || "0");
-        const lang = chapAttr.translatedLanguage || "en";
+        const lang = chapAttr.translatedLanguage || requestedLang;
         const groupRel = chap.relationships?.find((r: any) => r.type === "scanlation_group");
         const groupName = groupRel?.attributes?.name || undefined;
         const isHosted = !chapAttr.externalUrl && (chapAttr.pages === undefined || chapAttr.pages > 0);
@@ -293,10 +270,7 @@ export class MangaDexScraper implements BaseScraper {
         if (!existing) {
           chapterMap.set(item.chapterNum, item);
         } else {
-          // If existing is not hosted but current is hosted -> replace
           if (!existing.isHosted && item.isHosted) {
-            chapterMap.set(item.chapterNum, item);
-          } else if (lang === "ar" && existing.language !== "ar" && (item.isHosted || !existing.isHosted)) {
             chapterMap.set(item.chapterNum, item);
           }
         }

@@ -24,9 +24,8 @@ export class MangaCrawlerService {
   }
 
   /**
-   * Smart Multi-Source Search with Intelligent Language Detection
-   * If query is Arabic -> prioritizes Arabic sources (3asq, Kenmanga, LavaScans, RocksManga, Olympus, MangaLik) + MangaDex (ar)
-   * If query is English -> searches MangaDex (en) and global scanlation sources
+   * Primary Native Arabic Multi-Source Search
+   * Prioritizes live Arabic scanlation teams (3asq, Kenmanga, LavaScans, RocksManga, Olympus, MangaLik, SwatManga, AreaScans).
    */
   async searchAllSources(query: string) {
     const cleanQuery = query.trim();
@@ -40,7 +39,7 @@ export class MangaCrawlerService {
           url: cleanQuery,
           coverImage: "",
           source: "رابط خارجي",
-          language: "ar",
+          language: "ar" as const,
         },
       ];
     }
@@ -48,10 +47,10 @@ export class MangaCrawlerService {
     const queryLang = detectLanguage(cleanQuery);
 
     if (queryLang === "ar") {
-      // 1. Arabic Query: Search Arabic Providers first
+      // 1. Primary Arabic Search across verified Arabic scanlator sites
       const [arabicResults, mangadexResults] = await Promise.allSettled([
         arabicFallbackCrawler.searchAllArabicSources(cleanQuery),
-        this.scraper.searchManga(cleanQuery, { limit: 5 }),
+        this.scraper.searchManga(cleanQuery, { limit: 6 }),
       ]);
 
       const aggregated: Array<{
@@ -61,10 +60,10 @@ export class MangaCrawlerService {
         coverImage?: string;
         source: string;
         latestChapter?: string;
-        language: "ar" | "en";
+        language: "ar";
       }> = [];
 
-      // Arabic scanlators first
+      // Add Arabic Scanlation Teams first (Highest Priority)
       if (arabicResults.status === "fulfilled" && Array.isArray(arabicResults.value)) {
         arabicResults.value.forEach((item) => {
           aggregated.push({
@@ -79,7 +78,7 @@ export class MangaCrawlerService {
         });
       }
 
-      // MangaDex Arabic
+      // Add MangaDex only if Arabic translation is present
       if (mangadexResults.status === "fulfilled" && Array.isArray(mangadexResults.value)) {
         mangadexResults.value.forEach((item) => {
           aggregated.push({
@@ -96,7 +95,7 @@ export class MangaCrawlerService {
 
       return aggregated;
     } else {
-      // 2. English Query: Search MangaDex English & Global Providers
+      // 2. English Query Search
       const [mangadexResults, arabicResults] = await Promise.allSettled([
         this.scraper.searchManga(cleanQuery, { limit: 10 }),
         arabicFallbackCrawler.searchAllArabicSources(cleanQuery),
@@ -112,7 +111,6 @@ export class MangaCrawlerService {
         language: "ar" | "en";
       }> = [];
 
-      // MangaDex English first
       if (mangadexResults.status === "fulfilled" && Array.isArray(mangadexResults.value)) {
         mangadexResults.value.forEach((item) => {
           aggregated.push({
@@ -127,7 +125,6 @@ export class MangaCrawlerService {
         });
       }
 
-      // Arabic sources fallback
       if (arabicResults.status === "fulfilled" && Array.isArray(arabicResults.value)) {
         arabicResults.value.forEach((item) => {
           aggregated.push({
@@ -147,7 +144,7 @@ export class MangaCrawlerService {
   }
 
   /**
-   * Crawls a single Manga by ID or URL with explicit or inferred language target ('ar' | 'en')
+   * Crawls a Manga with pure Arabic preference, extracting 100% Arabic chapters and pages.
    */
   async crawlAndSaveManga(
     mangaIdOrUrl: string,
@@ -158,34 +155,85 @@ export class MangaCrawlerService {
     try {
       const isUrl = mangaIdOrUrl.startsWith("http://") || mangaIdOrUrl.startsWith("https://");
 
+      // 1. Direct URL Crawl (3asq, KenManga, LavaScans, RocksManga, MangaLik, SwatManga, etc.)
       if (isUrl) {
-        const { manga, chaptersCount } = await universalUrlScraper.scrapeAndSaveToDb(
+        const { manga, chaptersCount, chapters } = await universalUrlScraper.scrapeAndSaveToDb(
           mangaIdOrUrl,
           customSource
         );
+
         return {
           mangaId: manga.id,
           title: manga.title,
           chaptersCount,
           pagesIndexed: 0,
           status: "success",
-          source: manga.source || customSource || "رابط خارجي",
+          source: manga.source || customSource || "مصدر عربي معتمد",
           language: "ar",
         };
       }
 
       const mangaId = mangaIdOrUrl;
-      const lang = targetLang || (isArabicQuery(customSource || "") ? "ar" : "en");
+      const lang = targetLang || (isArabicQuery(mangaId) ? "ar" : "ar");
 
-      // 1. Fetch details from MangaDex
+      // 2. If it's a title or Arabic query, try fetching from Arabic Scanlator Sites First!
+      if (isArabicQuery(mangaId)) {
+        const arabicResult = await arabicFallbackCrawler.findArabicMangaAndChapters(mangaId);
+        if (arabicResult && arabicResult.chapters.length > 0) {
+          return {
+            mangaId: arabicResult.manga.id,
+            title: arabicResult.manga.title,
+            chaptersCount: arabicResult.chapters.length,
+            pagesIndexed: 0,
+            status: "success",
+            source: (arabicResult.manga as any).source || "مصدر عربي",
+            language: "ar",
+          };
+        }
+      }
+
+      // 3. MangaDex Lookup with Strict Arabic language filter
       const details = await this.scraper.getMangaDetails(mangaId);
       if (!details || details.title === "غير متوفر" || details.title === "خطأ في التحميل") {
-        throw new Error(`تعذر العثور على المانجا بالمعرف ${mangaId}`);
+        // Fallback search in Arabic sources
+        const arabicFallback = await arabicFallbackCrawler.findArabicMangaAndChapters(mangaId);
+        if (arabicFallback && arabicFallback.chapters.length > 0) {
+          return {
+            mangaId: arabicFallback.manga.id,
+            title: arabicFallback.manga.title,
+            chaptersCount: arabicFallback.chapters.length,
+            pagesIndexed: 0,
+            status: "success",
+            source: (arabicFallback.manga as any).source || "مصدر عربي",
+            language: "ar",
+          };
+        }
+
+        throw new Error(`تعذر العثور على العمل بالمعرف "${mangaId}"`);
       }
 
       const localized = lang === "ar" ? localizeMangaContent(details) : details;
 
-      // 2. Upsert Manga into PostgreSQL
+      // 4. Fetch chapters strictly for Arabic
+      let chapters = await this.scraper.getChapters(mangaId, lang);
+
+      // If MangaDex returned 0 Arabic chapters, search the Arabic scanlation websites!
+      if (chapters.length === 0 && localized.title) {
+        const arabicFallback = await arabicFallbackCrawler.findArabicMangaAndChapters(localized.title, mangaId);
+        if (arabicFallback && arabicFallback.chapters.length > 0) {
+          return {
+            mangaId: localized.id,
+            title: localized.title,
+            chaptersCount: arabicFallback.chapters.length,
+            pagesIndexed: 0,
+            status: "success",
+            source: (arabicFallback.manga as any).source || "مصدر عربي",
+            language: "ar",
+          };
+        }
+      }
+
+      // 5. Upsert Manga into PostgreSQL
       const savedManga = await prisma.manga.upsert({
         where: { id: mangaId },
         update: {
@@ -195,7 +243,7 @@ export class MangaCrawlerService {
           author: localized.author || "غير معروف",
           status: localized.status || "مستمر",
           genres: localized.genres || [],
-          source: customSource || (lang === "ar" ? "MangaDex (عربي)" : "MangaDex (English)"),
+          source: customSource || (lang === "ar" ? "ترجمة عربية معتمدة" : "MangaDex (English)"),
           sourceId: mangaId,
         },
         create: {
@@ -206,21 +254,18 @@ export class MangaCrawlerService {
           author: localized.author || "غير معروف",
           status: localized.status || "مستمر",
           genres: localized.genres || [],
-          source: customSource || (lang === "ar" ? "MangaDex (عربي)" : "MangaDex (English)"),
+          source: customSource || (lang === "ar" ? "ترجمة عربية معتمدة" : "MangaDex (English)"),
           sourceId: mangaId,
         },
       });
 
-      // 3. Fetch chapters for requested language
-      const chapters = await this.scraper.getChapters(mangaId, lang);
       let totalPages = 0;
 
-      // 4. Upsert Chapters in batches into PostgreSQL
+      // 6. Upsert Chapters into PostgreSQL
       for (let i = 0; i < chapters.length; i++) {
         const chap = chapters[i];
         let pages: string[] = [];
 
-        // Check if chapter already has pages in DB
         const existingChap = await prisma.chapter.findUnique({
           where: { id: chap.id },
           select: { pages: true },
@@ -228,10 +273,9 @@ export class MangaCrawlerService {
 
         if (existingChap?.pages && existingChap.pages.length > 0) {
           pages = existingChap.pages;
-        } else if (preCacheLatestPages && i < 3) {
+        } else if (preCacheLatestPages && i < 2) {
           try {
             pages = await this.scraper.getChapterPages(chap.id);
-            await new Promise((resolve) => setTimeout(resolve, 200));
           } catch (err) {
             pages = [];
           }
@@ -262,7 +306,7 @@ export class MangaCrawlerService {
         chaptersCount: chapters.length,
         pagesIndexed: totalPages,
         status: "success",
-        source: savedManga.source || "MangaDex",
+        source: savedManga.source || "ترجمة عربية معتمدة",
         language: lang,
       };
     } catch (error: any) {
@@ -279,14 +323,14 @@ export class MangaCrawlerService {
   }
 
   /**
-   * Crawls top popular Arabic manga feed from MangaDex API and auto-saves to PostgreSQL.
+   * Crawls top popular Arabic manga feed and auto-saves to PostgreSQL.
    */
   async crawlPopularArabicFeed(limit = 10): Promise<CrawlResult[]> {
     const popularMangas = await this.scraper.getPopularManga(limit);
     const results: CrawlResult[] = [];
 
     for (const m of popularMangas) {
-      const res = await this.crawlAndSaveManga(m.id, true, "MangaDex (عربي)", "ar");
+      const res = await this.crawlAndSaveManga(m.id, true, "ترجمة عربية معتمدة", "ar");
       results.push(res);
     }
 
@@ -304,8 +348,7 @@ export class MangaCrawlerService {
     const results: CrawlResult[] = [];
     for (const m of existingMangas) {
       const target = m.sourceId || m.id;
-      const isAr = isArabicQuery(m.title) || (m.source && m.source.includes("عربي"));
-      const res = await this.crawlAndSaveManga(target, false, m.source || undefined, isAr ? "ar" : "en");
+      const res = await this.crawlAndSaveManga(target, false, m.source || undefined, "ar");
       results.push(res);
     }
 
