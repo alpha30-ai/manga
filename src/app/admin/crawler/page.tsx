@@ -8,12 +8,9 @@ import {
   Sparkles,
   Database,
   Layers,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   BookOpen,
   Zap,
-  Play,
   ArrowDownToLine,
   ExternalLink,
   Globe,
@@ -22,7 +19,6 @@ import {
   Edit3,
   Plus,
   X,
-  FileText,
   Save,
   Check,
   Eye,
@@ -50,6 +46,7 @@ interface SearchSourceItem {
   coverImage?: string;
   source: string;
   latestChapter?: string;
+  language?: "ar" | "en";
 }
 
 interface ChapterItem {
@@ -152,7 +149,7 @@ export default function AdminCrawlerPage() {
     try {
       setSearchingSources(true);
       setSearchResults([]);
-      toast.loading("جاري البحث عبر كافة المصادر والمترجمين العرب و MangaDex...", {
+      toast.loading("جاري البحث الذكي عبر المصادر والمترجمين...", {
         id: "search-toast",
       });
 
@@ -173,7 +170,7 @@ export default function AdminCrawlerPage() {
             id: "search-toast",
           });
         } else {
-          toast.success(`تم العثور على ${data.results.length} نتائج في المصادر المتاحة!`, {
+          toast.success(`تم العثور على ${data.results.length} أعمال متطابقة!`, {
             id: "search-toast",
           });
         }
@@ -187,12 +184,17 @@ export default function AdminCrawlerPage() {
     }
   };
 
-  // Direct URL Import
-  const handleDirectUrlSync = async (url: string, customSource?: string) => {
+  // Direct URL or Target Manga Import
+  const handleDirectUrlSync = async (
+    target: string,
+    customSource?: string,
+    targetLang?: string
+  ) => {
+    const isUrl = target.startsWith("http://") || target.startsWith("https://");
     try {
-      setImportingUrl(url);
+      setImportingUrl(target);
       setSyncingSingle(true);
-      toast.loading("جاري زحف الرابط، تحليل DOM، واستخراج كافة الفصول والصفحات وتخزينها...", {
+      toast.loading("جاري سحب كافة الفصول والصفحات وتخزينها في قاعدة البيانات...", {
         id: "import-toast",
       });
 
@@ -200,8 +202,11 @@ export default function AdminCrawlerPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "sync-url",
-          url: url.trim(),
+          action: isUrl ? "sync-url" : "sync-single",
+          url: isUrl ? target.trim() : undefined,
+          mangaId: !isUrl ? target.trim() : undefined,
+          source: customSource,
+          language: targetLang,
         }),
       });
 
@@ -511,7 +516,7 @@ export default function AdminCrawlerPage() {
             محرك جلب وإدارة المانجات والفصول العربية بقاعدة البيانات
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            ابحث عن أي مانجا بالاسم العربي أو الإنجليزي من مختلف المصادر، أو الصق أي رابط مباشر لسحب الفصول وتخزينها محلياً وبشكل دائم مع تحكم كامل في التعديل والحذف.
+            البحث الذكي: إذا كتبت باللغة العربية يجلب العمل معرباً بالكامل من كافة المصادر، وإذا كتبت بالإنجليزية يجلب العمل بالإنجليزية مع تخزين دائم في PostgreSQL.
           </p>
         </div>
 
@@ -659,7 +664,8 @@ export default function AdminCrawlerPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {searchResults.map((item, idx) => {
-                const isImportingThis = importingUrl === (item.url || item.id);
+                const targetKey = item.url || item.id;
+                const isImportingThis = importingUrl === targetKey;
 
                 return (
                   <div
@@ -683,9 +689,14 @@ export default function AdminCrawlerPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold inline-block mb-1">
-                          المصدر: {item.source}
-                        </span>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                            {item.source}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[9px] font-bold">
+                            {item.language === "ar" ? "عربي" : "English"}
+                          </span>
+                        </div>
                         <h4 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-2">
                           {item.title}
                         </h4>
@@ -698,7 +709,7 @@ export default function AdminCrawlerPage() {
                     </div>
 
                     <button
-                      onClick={() => handleDirectUrlSync(item.url || item.id, item.source)}
+                      onClick={() => handleDirectUrlSync(targetKey, item.source, item.language)}
                       disabled={importingUrl !== null}
                       className="w-full py-2 bg-[#FF334B] hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
                     >

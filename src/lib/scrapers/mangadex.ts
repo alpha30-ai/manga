@@ -196,19 +196,29 @@ export class MangaDexScraper implements BaseScraper {
   }
 
   /**
-   * Flawless Chapter Fetching System (Zero Missing Chapters)
-   * Fetches ALL chapters dynamically with automated pagination loop across Arabic, English, and all feeds.
+   * Smart Language-Aware Chapter Fetching System
+   * Fetches chapters matching the exact language requested ('ar' for Arabic, 'en' for English).
    */
-  async getChapters(mangaId: string): Promise<ChapterInfo[]> {
+  async getChapters(mangaId: string, requestedLang?: "ar" | "en"): Promise<ChapterInfo[]> {
     try {
       let rawChapters: any[] = [];
       const limit = 100;
       let offset = 0;
       let total = 100;
 
-      // Paginated Fetch Loop to guarantee 100% chapter retrieval (up to 2,000 chapters)
+      // Determine language query filter
+      let langParam = "";
+      if (requestedLang === "ar") {
+        langParam = "translatedLanguage[]=ar";
+      } else if (requestedLang === "en") {
+        langParam = "translatedLanguage[]=en";
+      } else {
+        langParam = "translatedLanguage[]=ar&translatedLanguage[]=en";
+      }
+
+      // Paginated Fetch Loop to guarantee complete chapter retrieval
       while (offset < total && offset < 2000) {
-        const url = `${MANGADEX_API}/manga/${mangaId}/feed?translatedLanguage[]=ar&translatedLanguage[]=en&order[chapter]=desc&limit=${limit}&offset=${offset}&includes[]=scanlation_group&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
+        const url = `${MANGADEX_API}/manga/${mangaId}/feed?${langParam}&order[chapter]=desc&limit=${limit}&offset=${offset}&includes[]=scanlation_group&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
 
         const res = await fetch(url, { next: { revalidate: 900 } });
         if (!res.ok) break;
@@ -224,13 +234,13 @@ export class MangaDexScraper implements BaseScraper {
         }
       }
 
-      // If no Arabic or English chapters found, fetch all feeds
-      if (rawChapters.length === 0) {
+      // Fallback: If 0 chapters found in strict language mode, check English (or all feeds)
+      if (rawChapters.length === 0 && requestedLang === "ar") {
         let fallbackOffset = 0;
         let fallbackTotal = 100;
 
         while (fallbackOffset < fallbackTotal && fallbackOffset < 1000) {
-          const fallbackUrl = `${MANGADEX_API}/manga/${mangaId}/feed?order[chapter]=desc&limit=100&offset=${fallbackOffset}&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
+          const fallbackUrl = `${MANGADEX_API}/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=desc&limit=100&offset=${fallbackOffset}&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
           const fallbackRes = await fetch(fallbackUrl, { next: { revalidate: 900 } });
           if (!fallbackRes.ok) break;
 
@@ -246,7 +256,7 @@ export class MangaDexScraper implements BaseScraper {
         }
       }
 
-      // Clean, Deduplicate & Localize chapters (prioritizing hosted chapters with real pages)
+      // Clean, Deduplicate & Localize chapters
       const chapterMap = new Map<number, ChapterInfo & { isHosted?: boolean }>();
 
       for (const chap of rawChapters) {
@@ -265,8 +275,8 @@ export class MangaDexScraper implements BaseScraper {
             : `الفصل ${chapAttr.chapter || formattedNum}`;
         } else {
           chapTitle = chapAttr.title
-            ? `الفصل ${chapAttr.chapter || formattedNum}: ${chapAttr.title}`
-            : `الفصل ${chapAttr.chapter || formattedNum}`;
+            ? `Chapter ${chapAttr.chapter || formattedNum}: ${chapAttr.title}`
+            : `Chapter ${chapAttr.chapter || formattedNum}`;
         }
 
         const item: ChapterInfo & { isHosted?: boolean } = {
@@ -318,15 +328,11 @@ export class MangaDexScraper implements BaseScraper {
       if (!data?.baseUrl || !data?.chapter) return [];
 
       const baseUrl = data.baseUrl;
-      const hash = data.chapter.hash;
-      const files = (data.chapter.data && data.chapter.data.length > 0)
-        ? data.chapter.data
-        : data.chapter.dataSaver || [];
+      const chapterHash = data.chapter.hash;
+      const pageFileNames: string[] = data.chapter.data || data.chapter.dataSaver || [];
 
-      if (!Array.isArray(files) || files.length === 0) return [];
-
-      return files.map(
-        (file: string) => `${baseUrl}/data/${hash}/${file}`
+      return pageFileNames.map(
+        (fileName) => `${baseUrl}/data/${chapterHash}/${fileName}`
       );
     } catch (e) {
       console.error("MangaDex getChapterPages error:", e);
@@ -334,3 +340,5 @@ export class MangaDexScraper implements BaseScraper {
     }
   }
 }
+
+export const mangadexScraper = new MangaDexScraper();

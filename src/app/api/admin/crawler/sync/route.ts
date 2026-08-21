@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { crawlerService } from "@/lib/crawler";
 import prisma from "@/lib/prisma";
 import memoryCache from "@/lib/cache";
+import { detectLanguage } from "@/lib/languageUtils";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { action, mangaId, query, url, limit = 5, data, chapterId } = body;
+    const { action, mangaId, query, url, limit = 5, data, chapterId, source, language } = body;
 
     // 1. Search across all Arabic & MangaDex Sources
     if (action === "search-sources") {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "يرجى توفير رابط المانجا أو المصدر" }, { status: 400 });
       }
 
-      const result = await crawlerService.crawlAndSaveManga(targetUrl.trim(), true);
+      const result = await crawlerService.crawlAndSaveManga(targetUrl.trim(), true, source);
       memoryCache.clear();
 
       return NextResponse.json({
@@ -52,7 +53,14 @@ export async function POST(req: Request) {
       if (!mangaId) {
         return NextResponse.json({ message: "يرجى توفير معرف المانجا mangaId" }, { status: 400 });
       }
-      const result = await crawlerService.crawlAndSaveManga(mangaId, true);
+      const targetLang: "ar" | "en" | undefined =
+        language === "ar" || language === "en"
+          ? language
+          : source && source.includes("عربي")
+          ? "ar"
+          : undefined;
+
+      const result = await crawlerService.crawlAndSaveManga(mangaId, true, source, targetLang);
       memoryCache.clear();
 
       return NextResponse.json({
@@ -89,12 +97,17 @@ export async function POST(req: Request) {
 
       const target = searchResults[0];
       const targetIdOrUrl = target.url || target.id;
-      const result = await crawlerService.crawlAndSaveManga(targetIdOrUrl, true, target.source);
+      const targetLang: "ar" | "en" =
+        target.language === "ar" || target.language === "en"
+          ? target.language
+          : detectLanguage(query);
+
+      const result = await crawlerService.crawlAndSaveManga(targetIdOrUrl, true, target.source, targetLang);
       memoryCache.clear();
 
       return NextResponse.json({
         success: result.status === "success",
-        message: `تم العثور على "${result.title}" من مصدر (${target.source}) وحفظ ${result.chaptersCount} فصل بنجاح!`,
+        message: `تم العثور على "${result.title}" من مصدر (${target.source}) بلغة [${targetLang === "ar" ? "العربية" : "الإنجليزية"}] وحفظ ${result.chaptersCount} فصل بنجاح!`,
         result,
       });
     }
