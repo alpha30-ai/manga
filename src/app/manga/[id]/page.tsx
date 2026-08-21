@@ -6,6 +6,7 @@ import { BookOpen, User, Info, Clock, Layers, ArrowRight } from "lucide-react";
 import MangaActions from "@/components/manga/MangaActions";
 import MangaComments from "@/components/manga/MangaComments";
 import ChapterList from "@/components/manga/ChapterList";
+import MangaRatingComponent from "@/components/manga/MangaRatingComponent";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -265,6 +266,16 @@ export default async function MangaDetailsPage({ params }: { params: Promise<{ i
                 <Clock className="w-4 h-4 text-[#FF334B]" />
                 <span>إجمالي الفصول: {chapters.length}</span>
               </span>
+            </div>
+
+            {/* Real Rating Interactive Widget */}
+            <div>
+              <MangaRatingComponent
+                mangaId={manga.id}
+                mangaTitle={manga.title}
+                coverImage={manga.coverImage}
+                author={manga.author}
+              />
             </div>
 
             {/* Genres */}
