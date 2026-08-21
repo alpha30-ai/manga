@@ -20,6 +20,8 @@ export class ArabicFallbackCrawler {
     { name: "RocksManga", baseUrl: "https://rocksmanga.com/?s={QUERY}&post_type=wp-manga" },
     { name: "Olympus", baseUrl: "https://olympustaff.com/?s={QUERY}&post_type=wp-manga" },
     { name: "MangaLik", baseUrl: "https://mangalik.net/?s={QUERY}&post_type=wp-manga" },
+    { name: "AreaScans", baseUrl: "https://areascans.net/?s={QUERY}&post_type=wp-manga" },
+    { name: "SwatManga", baseUrl: "https://swatmanga.net/?s={QUERY}&post_type=wp-manga" },
   ];
 
   /**
@@ -40,7 +42,7 @@ export class ArabicFallbackCrawler {
         const html = await stealthFetchHtml(searchUrl);
         const $ = cheerio.load(html);
 
-        $(".c-tabs-item__content, .page-item-detail, .row.c-tabs-item__content, .bsx, .item, .manga-item, .search-wrap .row").each((_, el) => {
+        $(".c-tabs-item__content, .page-item-detail, .row.c-tabs-item__content, .bsx, .item, .manga-item, .search-wrap .row, .series-card").each((_, el) => {
           const titleEl = $(el).find(".post-title a, h3 a, h4 a, .tt a, .series-title a, .title a").first();
           const title = titleEl.text().trim();
           const url = titleEl.attr("href");
@@ -49,6 +51,7 @@ export class ArabicFallbackCrawler {
             $(el).find("img").first().attr("src") ||
             $(el).find("img").first().attr("data-src") ||
             $(el).find("img").first().attr("data-lazy-src") ||
+            $(el).find("img").first().attr("data-wpfc-original-src") ||
             "";
 
           const latestChap = $(el).find(".chapter a, .latest-chap, .epxs").first().text().trim();
@@ -131,8 +134,8 @@ export class ArabicFallbackCrawler {
 
           return scraped;
         }
-      } catch (e) {
-        // Try next match
+      } catch (err) {
+        // Continue to next source
       }
     }
 
@@ -140,25 +143,40 @@ export class ArabicFallbackCrawler {
   }
 
   /**
-   * Fallback to find images for a specific chapter number across Arabic sources.
+   * Searches Arabic providers for a specific chapter number of a manga and returns its image pages.
    */
-  async findChapterPagesByNumber(mangaTitle: string, chapterNum: number): Promise<string[]> {
-    const scraped = await this.findArabicMangaAndChapters(mangaTitle);
-    if (!scraped || scraped.chapters.length === 0) return [];
+  async findChapterPagesByNumber(
+    mangaTitle: string,
+    chapterNum: number
+  ): Promise<string[]> {
+    try {
+      const searchResults = await this.searchAllArabicSources(mangaTitle);
 
-    const targetChap = scraped.chapters.find(
-      (c) => c.chapterNum === chapterNum || Math.floor(c.chapterNum) === Math.floor(chapterNum)
-    );
+      for (const item of searchResults) {
+        try {
+          const scraped = await universalUrlScraper.scrapeUrl(item.url, item.source);
+          const matchedChap = scraped.chapters.find(
+            (c) => c.chapterNum === chapterNum || Math.abs(c.chapterNum - chapterNum) < 0.01
+          );
 
-    if (targetChap) {
-      try {
-        const decoded = Buffer.from(targetChap.id, "base64url").toString("utf-8");
-        if (decoded.startsWith("http")) {
-          return await universalUrlScraper.scrapeChapterPages(decoded);
-        }
-      } catch (e) {}
+          if (matchedChap) {
+            let chapterUrl = "";
+            try {
+              chapterUrl = Buffer.from(matchedChap.id, "base64url").toString("utf-8");
+            } catch (e) {
+              chapterUrl = matchedChap.id;
+            }
+
+            if (chapterUrl.startsWith("http")) {
+              const pages = await universalUrlScraper.scrapeChapterPages(chapterUrl);
+              if (pages.length > 0) return pages;
+            }
+          }
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.error("findChapterPagesByNumber error:", e);
     }
-
     return [];
   }
 }
