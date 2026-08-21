@@ -595,7 +595,7 @@ export default function AdminCrawlerPage() {
       <div className="bg-gradient-to-l from-slate-900 via-indigo-950 to-zinc-900 border border-slate-700/60 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white rounded-full text-xs font-black border border-white/20">
-            <Bot className="w-3.5 h-3.5 text-[#FF334B]" />
+            <Bot className="w-3.5 h-3.5 text-indigo-400" />
             <span>نظام الجلب الذكي الشامل وإدارة الفصول (Universal Manga Manager & Scraper)</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white">
@@ -611,7 +611,7 @@ export default function AdminCrawlerPage() {
           <button
             onClick={handleBulkSync}
             disabled={syncingBulk}
-            className="px-5 py-3 bg-[#FF334B] hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-500/25 transition-all flex items-center gap-2"
+            className="px-5 py-3 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2"
           >
             {syncingBulk ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -638,8 +638,8 @@ export default function AdminCrawlerPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-[#FF334B]">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
+          <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
@@ -652,8 +652,8 @@ export default function AdminCrawlerPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
+          <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
             <Zap className="w-6 h-6" />
           </div>
           <div>
@@ -666,7 +666,7 @@ export default function AdminCrawlerPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 shadow-sm flex items-center gap-4">
           <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
             <Database className="w-6 h-6" />
           </div>
@@ -682,10 +682,10 @@ export default function AdminCrawlerPage() {
       </div>
 
       {/* Universal Search & Link Scraper Tool */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-zinc-800 shadow-sm space-y-6">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 sm:p-8 border border-zinc-200/90 dark:border-zinc-800 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h2 className="font-black text-base sm:text-lg text-slate-950 dark:text-white flex items-center gap-2">
-            <Globe className="w-5 h-5 text-[#FF334B]" />
+            <Globe className="w-5 h-5 text-indigo-500" />
             <span>البحث المباشر في المصادر أو لصق رابط المانجا</span>
           </h2>
           {isUrlInput && (
@@ -707,10 +707,10 @@ export default function AdminCrawlerPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث باسم المانجا (عربي/إنجليزي) أو الصق رابط العمل المباشر..."
-              className="w-full pl-4 pr-11 py-4 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-2xl text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-[#FF334B]"
+              className="w-full pl-4 pr-11 py-4 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-2xl text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {isUrlInput ? (
-              <Link2 className="w-5 h-5 text-[#FF334B] absolute right-4 top-4" />
+              <Link2 className="w-5 h-5 text-indigo-500 absolute right-4 top-4" />
             ) : (
               <Search className="w-5 h-5 text-slate-400 absolute right-4 top-4" />
             )}
@@ -719,7 +719,7 @@ export default function AdminCrawlerPage() {
           <button
             type="submit"
             disabled={searchingSources || syncingSingle}
-            className="px-8 py-4 bg-gradient-to-l from-[#FF334B] to-rose-600 hover:opacity-95 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md shadow-rose-500/20 transition-all flex items-center justify-center gap-2 shrink-0"
+            className="px-8 py-4 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 shrink-0"
           >
             {searchingSources || syncingSingle ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -734,7 +734,7 @@ export default function AdminCrawlerPage() {
 
         {/* Live Multi-Source Search Results Grid */}
         {searchResults.length > 0 && (
-          <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
+          <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" />
@@ -756,7 +756,7 @@ export default function AdminCrawlerPage() {
                 return (
                   <div
                     key={idx}
-                    className="p-4 bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between gap-3 group hover:border-[#FF334B] transition-all"
+                    className="p-4 bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between gap-3 group hover:border-indigo-500/50 transition-all"
                   >
                     <div className="flex gap-3">
                       <div className="w-14 h-20 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0">
@@ -779,7 +779,7 @@ export default function AdminCrawlerPage() {
                           <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
                             {item.source}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[9px] font-bold">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[9px] font-bold">
                             {item.language === "ar" ? "عربي" : "English"}
                           </span>
                         </div>
@@ -797,7 +797,7 @@ export default function AdminCrawlerPage() {
                     <button
                       onClick={() => handleDirectUrlSync(targetKey, item.source, item.language)}
                       disabled={importingUrl !== null}
-                      className="w-full py-2 bg-[#FF334B] hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      className="w-full py-2 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
                     >
                       {isImportingThis ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -817,8 +817,8 @@ export default function AdminCrawlerPage() {
       </div>
 
       {/* Database Manga Management Table with Batch Selection & Deletion */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/90 dark:border-zinc-800 overflow-hidden shadow-sm space-y-4 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 pb-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 overflow-hidden shadow-sm space-y-4 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
           <div>
             <h3 className="font-black text-base text-slate-950 dark:text-white flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-500" />
@@ -837,7 +837,7 @@ export default function AdminCrawlerPage() {
                 value={filterQuery}
                 onChange={(e) => setFilterQuery(e.target.value)}
                 placeholder="تصفية المخزون..."
-                className="pl-3 pr-8 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-[#FF334B] w-48"
+                className="pl-3 pr-8 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500 w-48"
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5" />
             </div>
@@ -845,7 +845,7 @@ export default function AdminCrawlerPage() {
             <button
               onClick={fetchStatus}
               disabled={loading}
-              className="p-2 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               title="تحديث القائمة"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -854,7 +854,7 @@ export default function AdminCrawlerPage() {
         </div>
 
         {/* Quick Batch Selection Toolbar */}
-        <div className="p-4 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/60 rounded-2xl border border-zinc-200/80 dark:border-zinc-700/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-slate-600 dark:text-zinc-300">
               تحديد سريع:
@@ -862,21 +862,21 @@ export default function AdminCrawlerPage() {
 
             <button
               onClick={() => handleSelectTopN(5)}
-              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
             >
               أول 5 أعمال
             </button>
 
             <button
               onClick={() => handleSelectTopN(10)}
-              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
             >
               أول 10 أعمال
             </button>
 
             <button
               onClick={() => handleSelectTopN(25)}
-              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-slate-100 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
+              className="px-2.5 py-1 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200"
             >
               أول 25 عمل
             </button>
@@ -897,11 +897,11 @@ export default function AdminCrawlerPage() {
                 max={filteredMangas.length}
                 value={customSelectCount}
                 onChange={(e) => setCustomSelectCount(e.target.value)}
-                className="w-16 px-2 py-1 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-center outline-none focus:ring-1 focus:ring-[#FF334B]"
+                className="w-16 px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-center outline-none focus:ring-1 focus:ring-indigo-500"
               />
               <button
                 onClick={() => handleSelectTopN(parseInt(customSelectCount) || 1)}
-                className="px-3 py-1 bg-slate-200 dark:bg-zinc-700 hover:bg-slate-300 text-slate-900 dark:text-white rounded-lg text-xs font-bold"
+                className="px-3 py-1 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 text-slate-900 dark:text-white rounded-lg text-xs font-bold"
               >
                 تطبيق
               </button>
@@ -911,7 +911,7 @@ export default function AdminCrawlerPage() {
           {/* Selected Count & Direct Delete Button */}
           {selectedMangaIds.length > 0 && (
             <div className="flex items-center gap-3">
-              <span className="text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-3 py-1 rounded-xl border border-rose-200 dark:border-rose-900">
+              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-xl border border-indigo-200 dark:border-indigo-900">
                 تم تحديد: {selectedMangaIds.length} من {filteredMangas.length}
               </span>
 
@@ -940,7 +940,7 @@ export default function AdminCrawlerPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs sm:text-sm">
-            <thead className="bg-slate-50 dark:bg-zinc-800/60 border-b border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400 font-bold">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200/80 dark:border-zinc-800/80 text-zinc-600 dark:text-zinc-400 font-bold">
               <tr>
                 <th className="p-4 sm:p-5 w-12 text-center">
                   <button
@@ -949,7 +949,7 @@ export default function AdminCrawlerPage() {
                     title={isAllSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
                   >
                     {isAllSelected ? (
-                      <CheckSquare className="w-4 h-4 text-[#FF334B]" />
+                      <CheckSquare className="w-4 h-4 text-indigo-600" />
                     ) : (
                       <Square className="w-4 h-4" />
                     )}
@@ -963,11 +963,11 @@ export default function AdminCrawlerPage() {
                 <th className="p-4 sm:p-5 text-left">لوحة التحكم والإجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
               {loading && stats.mangas.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#FF334B]" />
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />
                     <span>جاري تحميل قائمة الأعمال...</span>
                   </td>
                 </tr>
@@ -989,18 +989,18 @@ export default function AdminCrawlerPage() {
                     key={m.id}
                     className={`transition-colors ${
                       isSelected
-                        ? "bg-rose-50/50 dark:bg-rose-950/20"
-                        : "hover:bg-slate-50 dark:hover:bg-zinc-800/40"
+                        ? "bg-indigo-50/50 dark:bg-indigo-950/20"
+                        : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
                     }`}
                   >
                     {/* Checkbox cell */}
                     <td className="p-4 sm:p-5 text-center">
                       <button
                         onClick={() => handleToggleSelectOne(m.id)}
-                        className="p-1 text-slate-400 hover:text-[#FF334B]"
+                        className="p-1 text-slate-400 hover:text-indigo-600"
                       >
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-[#FF334B]" />
+                          <CheckSquare className="w-4 h-4 text-indigo-600" />
                         ) : (
                           <Square className="w-4 h-4" />
                         )}
@@ -1009,7 +1009,7 @@ export default function AdminCrawlerPage() {
 
                     <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-zinc-100">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 shadow-sm">
+                        <div className="w-12 h-16 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 shadow-sm">
                           {m.coverImage ? (
                             <img
                               src={getSafeImageUrl(m.coverImage)}
@@ -1031,7 +1031,7 @@ export default function AdminCrawlerPage() {
                             {m.genres?.slice(0, 2).map((g) => (
                               <span
                                 key={g}
-                                className="px-1.5 py-0.5 bg-rose-50 dark:bg-rose-950/60 text-[#FF334B] rounded text-[10px] font-bold"
+                                className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded text-[10px] font-bold"
                               >
                                 {g}
                               </span>
@@ -1057,7 +1057,7 @@ export default function AdminCrawlerPage() {
                     </td>
 
                     <td className="p-4 sm:p-5 text-slate-500 font-mono text-xs">
-                      <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-bold">
+                      <span className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-bold">
                         {m.source}
                       </span>
                     </td>
@@ -1092,7 +1092,7 @@ export default function AdminCrawlerPage() {
                         <button
                           onClick={() => handleReSyncSingle(m.id)}
                           disabled={reSyncingId === m.id}
-                          className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition-colors"
                           title="مزامنة الفصول الجديدة"
                         >
                           {reSyncingId === m.id ? (
@@ -1115,7 +1115,7 @@ export default function AdminCrawlerPage() {
                         <Link
                           href={`/manga/${m.id}`}
                           target="_blank"
-                          className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                          className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                           title="عرض العمل بالموقع"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -1134,9 +1134,9 @@ export default function AdminCrawlerPage() {
       {selectedMangaIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-md border border-slate-700 dark:border-zinc-800 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-5">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FF334B] animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
             <span className="text-xs sm:text-sm font-bold">
-              تم تحديد <strong className="text-[#FF334B]">{selectedMangaIds.length}</strong> أعمال
+              تم تحديد <strong className="text-indigo-400">{selectedMangaIds.length}</strong> أعمال
             </span>
           </div>
 
@@ -1167,8 +1167,8 @@ export default function AdminCrawlerPage() {
       {/* Edit Manga Modal */}
       {editingManga && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-950">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
               <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-amber-500" />
                 <span>تعديل بيانات العمل</span>
@@ -1191,7 +1191,7 @@ export default function AdminCrawlerPage() {
                   required
                   value={editFormData.title}
                   onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                  className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1204,7 +1204,7 @@ export default function AdminCrawlerPage() {
                     type="text"
                     value={editFormData.author}
                     onChange={(e) => setEditFormData({ ...editFormData, author: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
@@ -1215,7 +1215,7 @@ export default function AdminCrawlerPage() {
                   <select
                     value={editFormData.status}
                     onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="مستمر">مستمر</option>
                     <option value="مكتمل">مكتمل</option>
@@ -1232,7 +1232,7 @@ export default function AdminCrawlerPage() {
                   type="text"
                   value={editFormData.coverImage}
                   onChange={(e) => setEditFormData({ ...editFormData, coverImage: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                  className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1244,7 +1244,7 @@ export default function AdminCrawlerPage() {
                   type="text"
                   value={editFormData.source}
                   onChange={(e) => setEditFormData({ ...editFormData, source: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                  className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1257,22 +1257,22 @@ export default function AdminCrawlerPage() {
                   value={editFormData.genres}
                   onChange={(e) => setEditFormData({ ...editFormData, genres: e.target.value })}
                   placeholder="أكشن, مغامرة, مانهوا, خيال"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF334B]"
+                  className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-zinc-800">
+              <div className="pt-4 flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setEditingManga(null)}
-                  className="px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl"
+                  className="px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="px-6 py-2.5 bg-[#FF334B] hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+                  className="px-6 py-2.5 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
                 >
                   {savingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   <span>حفظ التعديلات</span>
@@ -1286,8 +1286,8 @@ export default function AdminCrawlerPage() {
       {/* Manage Chapters Modal */}
       {chapterModalManga && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-950">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-indigo-500" />
                 <div>
@@ -1303,7 +1303,7 @@ export default function AdminCrawlerPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAddChapter(!showAddChapter)}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
+                  className="px-3 py-1.5 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs rounded-xl flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>إضافة فصل يدوي</span>
@@ -1334,7 +1334,7 @@ export default function AdminCrawlerPage() {
                     placeholder="مثال: الفصل 1: البداية"
                     value={newChapterTitle}
                     onChange={(e) => setNewChapterTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs"
+                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs"
                   />
                 </div>
 
@@ -1349,7 +1349,7 @@ export default function AdminCrawlerPage() {
                     placeholder="1"
                     value={newChapterNum}
                     onChange={(e) => setNewChapterNum(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs"
+                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs"
                   />
                 </div>
 
@@ -1357,7 +1357,7 @@ export default function AdminCrawlerPage() {
                   <button
                     type="submit"
                     disabled={addingChapter}
-                    className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1"
+                    className="flex-1 py-2 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1"
                   >
                     {addingChapter ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                     <span>إضافة</span>
@@ -1365,7 +1365,7 @@ export default function AdminCrawlerPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddChapter(false)}
-                    className="px-3 py-2 bg-slate-200 dark:bg-zinc-700 text-xs font-bold rounded-xl"
+                    className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 text-xs font-bold rounded-xl"
                   >
                     إلغاء
                   </button>
@@ -1388,7 +1388,7 @@ export default function AdminCrawlerPage() {
                 chapterList.map((chap) => (
                   <div
                     key={chap.id}
-                    className="p-3 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-750 rounded-xl flex items-center justify-between gap-3 group hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                    className="p-3 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-750 rounded-xl flex items-center justify-between gap-3 group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0">
@@ -1408,7 +1408,7 @@ export default function AdminCrawlerPage() {
                       <Link
                         href={`/manga/${chapterModalManga.id}/chapter/${chap.id}`}
                         target="_blank"
-                        className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                         title="قراءة الفصل"
                       >
                         <Eye className="w-3.5 h-3.5" />

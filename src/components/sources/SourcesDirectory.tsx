@@ -59,9 +59,9 @@ export default function SourcesDirectory({ initialSources }: { initialSources: S
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث عن اسم المصدر أو الرابط..."
-              className="w-full pl-4 pr-10 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full pl-4 pr-11 py-3.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-xs sm:text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             />
-            <Search className="w-4 h-4 text-zinc-400 absolute right-3.5 top-3.5" />
+            <Search className="w-4 h-4 text-zinc-400 absolute right-4 top-4" />
           </div>
 
           {/* Language Filter */}
@@ -74,9 +74,9 @@ export default function SourcesDirectory({ initialSources }: { initialSources: S
               <button
                 key={tab.id}
                 onClick={() => setSelectedLang(tab.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all shrink-0 ${
                   selectedLang === tab.id
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                    ? "bg-gradient-to-l from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 }`}
               >
@@ -92,7 +92,7 @@ export default function SourcesDirectory({ initialSources }: { initialSources: S
         {filteredSources.map((source) => (
           <div
             key={source.id}
-            className="group flex flex-col justify-between bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-indigo-500/50 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+            className="group flex flex-col justify-between bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-indigo-500/40 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 relative overflow-hidden"
           >
             <div className="space-y-4">
               <div className="flex items-start justify-between">
@@ -121,7 +121,7 @@ export default function SourcesDirectory({ initialSources }: { initialSources: S
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {source.name}
                 </h3>
-                <p className="text-xs text-zinc-400 truncate mt-1" dir="ltr">
+                <p className="text-xs text-zinc-400 truncate mt-1 font-mono" dir="ltr">
                   {source.baseUrl}
                 </p>
               </div>
@@ -138,7 +138,7 @@ export default function SourcesDirectory({ initialSources }: { initialSources: S
 
               <Link
                 href={`/sources/${source.id}`}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-gradient-to-l from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5"
               >
                 <span>تصفح الأعمال</span>
                 <ArrowLeft className="w-3.5 h-3.5" />
